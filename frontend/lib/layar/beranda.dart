@@ -207,22 +207,25 @@ class _TabBerandaState extends State<TabBeranda> {
               ]);
             }
             final (lap, trx, kur) = snap.data!;
+            final daftar = trx.reversed.cast<Map<String, dynamic>>().toList();
             return ListView(padding: paddingTab, children: [
               kepala,
-              const SizedBox(height: 18),
-              _KartuUntung(lap),
-              const SizedBox(height: 12),
+              const SizedBox(height: 20),
+              _KartuUntung(lap, aksi: [
+                _Aksi(Icons.mic_rounded, 'Catat', widget.onCatat),
+                _Aksi(Icons.bar_chart_rounded, 'Laporan', () => widget.keTab(1)),
+                _Aksi(Icons.verified_outlined, 'Rapor KUR', () => widget.keTab(2)),
+                _Aksi(Icons.account_balance_outlined, 'Rekening', () => widget.keTab(3)),
+              ]),
+              const SizedBox(height: 16),
               _BannerKur(kur, () => widget.keTab(2)),
               if (Sesi.briTersambung != true) ...[
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
                 _AjakSambung(() => widget.keTab(3)),
               ],
-              const SizedBox(height: 22),
-              Row(children: [
-                Text('Catatan hari ini', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600)),
-                const Spacer(),
-                Text('${trx.length} transaksi', style: const TextStyle(color: Warna.redup, fontSize: 13)),
-              ]),
+              const SizedBox(height: 24),
+              JudulBagian('Catatan hari ini',
+                  aksi: trx.isEmpty ? null : 'Lihat laporan', onAksi: () => widget.keTab(1)),
               const SizedBox(height: 10),
               if (trx.isEmpty)
                 Kosong(
@@ -233,7 +236,15 @@ class _TabBerandaState extends State<TabBeranda> {
                   onTombol: widget.onCatat,
                 )
               else
-                ...trx.reversed.map((t) => BarisTransaksi(t as Map<String, dynamic>, onHapus: () => _hapus(t))),
+                Kartu(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Column(children: [
+                    for (var i = 0; i < daftar.length; i++) ...[
+                      if (i > 0) const Divider(height: 1, indent: 68, endIndent: 16, color: Warna.garis),
+                      BarisTransaksi(daftar[i], onHapus: () => _hapus(daftar[i])),
+                    ],
+                  ]),
+                ),
             ]);
           },
         ),
@@ -278,9 +289,17 @@ class Avatar extends StatelessWidget {
   }
 }
 
+class _Aksi {
+  const _Aksi(this.ikon, this.label, this.onTap);
+  final IconData ikon;
+  final String label;
+  final VoidCallback onTap;
+}
+
 class _KartuUntung extends StatelessWidget {
-  const _KartuUntung(this.lap);
+  const _KartuUntung(this.lap, {required this.aksi});
   final Map<String, dynamic> lap;
+  final List<_Aksi> aksi;
 
   @override
   Widget build(BuildContext context) {
@@ -288,19 +307,50 @@ class _KartuUntung extends StatelessWidget {
     final keluar = (lap['pengeluaran'] as num?) ?? 0;
     final qris = (lap['omzetQris'] as num?) ?? 0;
     final laba = (lap['laba'] as num?) ?? 0;
-    return Kartu(
-      warna: Warna.oliveTua,
-      padding: const EdgeInsets.all(20),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Text('Untung hari ini', style: TextStyle(color: Warna.khaki, fontSize: 13)),
-        const SizedBox(height: 4),
-        Text(rp(laba), style: GoogleFonts.poppins(color: Colors.white, fontSize: 30, fontWeight: FontWeight.w700)),
-        const SizedBox(height: 14),
-        Row(children: [
-          _Angka('Masuk', rp(omzet), Icons.arrow_downward_rounded),
-          _Angka('Keluar', rp(keluar), Icons.arrow_upward_rounded),
-          _Angka('Lewat QRIS', rp(qris), Icons.qr_code_2_rounded),
-        ]),
+    return Container(
+      decoration: BoxDecoration(color: Warna.kartu, borderRadius: BorderRadius.circular(22)),
+      child: Column(children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+          decoration: BoxDecoration(color: Warna.oliveTua, borderRadius: BorderRadius.circular(22)),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Text('Untung hari ini', style: TextStyle(color: Warna.khaki, fontSize: 13)),
+            const SizedBox(height: 2),
+            Text(rp(laba), style: GoogleFonts.poppins(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 12),
+            Row(children: [
+              _Angka('Masuk', rp(omzet), Icons.arrow_downward_rounded),
+              _Angka('Keluar', rp(keluar), Icons.arrow_upward_rounded),
+              _Angka('Lewat QRIS', rp(qris), Icons.qr_code_2_rounded),
+            ]),
+          ]),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Row(children: [
+            for (final a in aksi)
+              Expanded(
+                child: InkWell(
+                  onTap: a.onTap,
+                  borderRadius: BorderRadius.circular(14),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Column(children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(color: Warna.khaki.withOpacity(.7), borderRadius: BorderRadius.circular(14)),
+                        child: Icon(a.ikon, color: Warna.oliveTua, size: 22),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(a.label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                    ]),
+                  ),
+                ),
+              ),
+          ]),
+        ),
       ]),
     );
   }
@@ -436,10 +486,8 @@ class BarisTransaksi extends StatelessWidget {
     final sumber = switch (t['sumber']) { 'SUARA' => 'Suara', 'TEKS' => 'Chat', 'QRIS' => 'QRIS', 'MUTASI' => 'Transfer', _ => 'Manual' };
     final nama = '${t['namaItem']}';
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Kartu(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        child: Row(children: [
+      padding: const EdgeInsets.fromLTRB(14, 10, 4, 10),
+      child: Row(children: [
           Container(
             width: 40,
             height: 40,
@@ -469,9 +517,32 @@ class BarisTransaksi extends StatelessWidget {
               icon: const Icon(Icons.more_vert_rounded, size: 18, color: Warna.redup),
               onSelected: (_) => onHapus!(),
               itemBuilder: (_) => const [PopupMenuItem(value: 'hapus', child: Text('Hapus'))],
-            ),
+            )
+          else
+            const SizedBox(width: 10),
         ]),
-      ),
     );
   }
+}
+
+/// Judul bagian dengan tautan aksi di kanan, seperti "Lihat semua".
+class JudulBagian extends StatelessWidget {
+  const JudulBagian(this.judul, {super.key, this.aksi, this.onAksi});
+  final String judul;
+  final String? aksi;
+  final VoidCallback? onAksi;
+
+  @override
+  Widget build(BuildContext context) => Row(children: [
+        Expanded(child: Text(judul, style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600))),
+        if (aksi != null)
+          InkWell(
+            onTap: onAksi,
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+              child: Text(aksi!, style: const TextStyle(color: Warna.olive, fontWeight: FontWeight.w600, fontSize: 13)),
+            ),
+          ),
+      ]);
 }
