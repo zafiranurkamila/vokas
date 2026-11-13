@@ -9,7 +9,8 @@ import '../tema.dart';
 import 'beranda.dart';
 
 class TabLaporan extends StatefulWidget {
-  const TabLaporan({super.key});
+  const TabLaporan({super.key, required this.onDataBerubah});
+  final VoidCallback onDataBerubah;
 
   @override
   State<TabLaporan> createState() => _TabLaporanState();
@@ -17,7 +18,20 @@ class TabLaporan extends StatefulWidget {
 
 class _TabLaporanState extends State<TabLaporan> {
   int _hari = 7;
+  bool _mengisi = false;
   late Future<Map<String, dynamic>> _data = _muat();
+
+  Future<void> _isiContoh() async {
+    setState(() => _mengisi = true);
+    try {
+      await Api.isiDataContoh(Sesi.pedagangId!);
+      widget.onDataBerubah();
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(pesanGalat(e))));
+    } finally {
+      if (mounted) setState(() => _mengisi = false);
+    }
+  }
 
   Future<Map<String, dynamic>> _muat() {
     final sampai = DateTime.now();
@@ -30,7 +44,7 @@ class _TabLaporanState extends State<TabLaporan> {
         future: _data,
         builder: (context, snap) {
           final judul = Padding(
-            padding: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.only(bottom: 16),
             child: Row(children: [
               Expanded(child: Text('Laporan', style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.w700))),
               SegmentedButton<int>(
@@ -45,17 +59,30 @@ class _TabLaporanState extends State<TabLaporan> {
             ]),
           );
           if (snap.hasError) {
-            return ListView(padding: const EdgeInsets.all(20), children: [judul, Text(pesanGalat(snap.error!))]);
+            return ListView(padding: paddingTab, children: [judul, Text(pesanGalat(snap.error!))]);
           }
           if (!snap.hasData) {
-            return ListView(padding: const EdgeInsets.all(20), children: [judul, const SizedBox(height: 60), const Center(child: CircularProgressIndicator())]);
+            return ListView(padding: paddingTab, children: [judul, const SizedBox(height: 60), const Center(child: CircularProgressIndicator())]);
           }
           final l = snap.data!;
           final harian = ((l['harian'] as List?) ?? []).cast<Map<String, dynamic>>();
           final terlaris = ((l['terlaris'] as List?) ?? []).cast<Map<String, dynamic>>();
           final omzet = (l['omzet'] as num?) ?? 0;
           final qris = (l['omzetQris'] as num?) ?? 0;
-          return ListView(padding: const EdgeInsets.fromLTRB(20, 12, 20, 100), children: [
+          if ((l['jumlahTransaksi'] as num? ?? 0) == 0) {
+            return ListView(padding: paddingTab, children: [
+              judul,
+              Kosong(
+                ikon: Icons.bar_chart_rounded,
+                judul: 'Laporan masih kosong',
+                isi: 'Belum ada transaksi dalam $_hari hari terakhir. Mulai catat lewat tombol mic, '
+                    'atau isi data contoh 90 hari untuk melihat laporan lengkap.',
+                tombol: _mengisi ? 'Mengisi...' : 'Isi data contoh 90 hari',
+                onTombol: _mengisi ? null : _isiContoh,
+              ),
+            ]);
+          }
+          return ListView(padding: paddingTab, children: [
             judul,
             Row(children: [
               _Ringkas('Omzet', rp(omzet), Warna.oliveTua),

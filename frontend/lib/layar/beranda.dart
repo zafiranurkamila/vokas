@@ -2,15 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../api.dart';
-import '../main.dart';
 import '../sesi.dart';
 import '../tema.dart';
+import '../widget/tur.dart';
 import 'catat.dart';
 import 'laporan.dart';
+import 'profil.dart';
 import 'rapor_kur.dart';
 
 String tglIso(DateTime d) =>
     '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+/// Jarak atas yang sama untuk semua tab.
+const paddingTab = EdgeInsets.fromLTRB(20, 28, 20, 110);
 
 class Beranda extends StatefulWidget {
   const Beranda({super.key});
@@ -21,7 +25,50 @@ class Beranda extends StatefulWidget {
 
 class _BerandaState extends State<Beranda> {
   int _tab = 0;
-  int _versi = 0; // dinaikkan setelah mencatat, supaya tab memuat ulang data
+  int _versi = 0; // dinaikkan setelah mencatat/isi data contoh, supaya tab memuat ulang
+
+  final _kunciMic = GlobalKey();
+  final _kunciLaporan = GlobalKey();
+  final _kunciKur = GlobalKey();
+  final _kunciProfil = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    if (!Sesi.sudahTur) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => Future.delayed(const Duration(milliseconds: 500), _mulaiTur));
+    }
+  }
+
+  void _mulaiTur() {
+    if (!mounted) return;
+    tampilkanTur(context, [
+      const LangkahTur(
+        judul: 'Selamat datang di VoKas',
+        isi: 'Kenalan sebentar dengan fitur utamanya. Cuma 4 langkah.',
+      ),
+      LangkahTur(
+        kunci: _kunciMic,
+        judul: 'Catat lewat suara',
+        isi: 'Tekan mic lalu bicara, misalnya "jual cilok tiga puluh bungkus dua ribuan". Bisa juga diketik.',
+      ),
+      LangkahTur(
+        kunci: _kunciLaporan,
+        judul: 'Laporan otomatis',
+        isi: 'Omzet, pengeluaran, laba, dan barang paling laku tersusun sendiri per 7 atau 30 hari.',
+      ),
+      LangkahTur(
+        kunci: _kunciKur,
+        judul: 'Rapor Kesiapan KUR',
+        isi: 'Skor 0-100 dari catatanmu. Semakin rajin dan rapi, semakin siap mengajukan KUR.',
+      ),
+      LangkahTur(
+        kunci: _kunciProfil,
+        judul: 'Profil & rekening BRI',
+        isi: 'Sambungkan rekening BRI supaya QRIS tercatat sendiri. Di sini juga ada data contoh untuk mencoba.',
+      ),
+    ], onSelesai: Sesi.selesaiTur);
+  }
 
   Future<void> _catat() async {
     final tersimpan = await showModalBottomSheet<bool>(
@@ -34,37 +81,44 @@ class _BerandaState extends State<Beranda> {
     if (tersimpan == true) setState(() => _versi++);
   }
 
+  void _segarkan() => setState(() => _versi++);
+
   @override
   Widget build(BuildContext context) {
     final tabs = [
-      TabBeranda(key: ValueKey('b$_versi'), keTab: (i) => setState(() => _tab = i)),
-      TabLaporan(key: ValueKey('l$_versi')),
-      TabRaporKur(key: ValueKey('k$_versi')),
+      TabBeranda(key: ValueKey('b$_versi'), keTab: (i) => setState(() => _tab = i), onCatat: _catat),
+      TabLaporan(key: ValueKey('l$_versi'), onDataBerubah: _segarkan),
+      TabRaporKur(key: ValueKey('k$_versi'), onDataBerubah: _segarkan),
+      TabProfil(key: ValueKey('p$_versi'), onDataBerubah: _segarkan),
     ];
     return Scaffold(
-      body: SafeArea(child: Center(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 520), child: tabs[_tab]))),
-      floatingActionButton: FloatingActionButton.large(
+      body: SafeArea(
+        bottom: false,
+        child: Center(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 520), child: tabs[_tab])),
+      ),
+      floatingActionButton: FloatingActionButton(
+        key: _kunciMic,
         onPressed: _catat,
         backgroundColor: Warna.oliveTua,
         foregroundColor: Colors.white,
+        elevation: 3,
         shape: const CircleBorder(),
-        tooltip: 'Catat',
-        child: const Icon(Icons.mic_rounded, size: 40),
+        tooltip: 'Catat transaksi',
+        child: const Icon(Icons.mic_rounded, size: 28),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: BottomAppBar(
         color: Colors.white,
+        height: 68,
+        padding: EdgeInsets.zero,
         shape: const CircularNotchedRectangle(),
-        notchMargin: 8,
-        child: Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
+        notchMargin: 6,
+        child: Row(children: [
           _Nav(Icons.home_rounded, 'Beranda', _tab == 0, () => setState(() => _tab = 0)),
-          _Nav(Icons.bar_chart_rounded, 'Laporan', _tab == 1, () => setState(() => _tab = 1)),
-          const SizedBox(width: 72),
-          _Nav(Icons.verified_rounded, 'Rapor KUR', _tab == 2, () => setState(() => _tab = 2)),
-          _Nav(Icons.logout_rounded, 'Keluar', false, () async {
-            await Sesi.keluar();
-            if (context.mounted) lanjut(context);
-          }),
+          _Nav(Icons.bar_chart_rounded, 'Laporan', _tab == 1, () => setState(() => _tab = 1), kunci: _kunciLaporan),
+          const SizedBox(width: 64),
+          _Nav(Icons.verified_outlined, 'Rapor KUR', _tab == 2, () => setState(() => _tab = 2), kunci: _kunciKur),
+          _Nav(Icons.person_outline_rounded, 'Profil', _tab == 3, () => setState(() => _tab = 3), kunci: _kunciProfil),
         ]),
       ),
     );
@@ -72,20 +126,21 @@ class _BerandaState extends State<Beranda> {
 }
 
 class _Nav extends StatelessWidget {
-  const _Nav(this.ikon, this.label, this.aktif, this.onTap);
+  const _Nav(this.ikon, this.label, this.aktif, this.onTap, {this.kunci});
   final IconData ikon;
   final String label;
   final bool aktif;
   final VoidCallback onTap;
+  final Key? kunci;
 
   @override
-  Widget build(BuildContext context) => InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Icon(ikon, color: aktif ? Warna.oliveTua : Warna.redup),
+  Widget build(BuildContext context) => Expanded(
+        child: InkWell(
+          key: kunci,
+          onTap: onTap,
+          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Icon(ikon, size: 23, color: aktif ? Warna.oliveTua : Warna.redup),
+            const SizedBox(height: 2),
             Text(label,
                 style: TextStyle(
                     fontSize: 11, color: aktif ? Warna.oliveTua : Warna.redup, fontWeight: aktif ? FontWeight.w600 : null)),
@@ -95,8 +150,9 @@ class _Nav extends StatelessWidget {
 }
 
 class TabBeranda extends StatefulWidget {
-  const TabBeranda({super.key, required this.keTab});
+  const TabBeranda({super.key, required this.keTab, required this.onCatat});
   final ValueChanged<int> keTab;
+  final VoidCallback onCatat;
 
   @override
   State<TabBeranda> createState() => _TabBerandaState();
@@ -134,9 +190,9 @@ class _TabBerandaState extends State<TabBeranda> {
         child: FutureBuilder(
           future: _data,
           builder: (context, snap) {
-            final kepala = _Sapaan();
+            const kepala = _Sapaan();
             if (snap.hasError) {
-              return ListView(padding: const EdgeInsets.all(20), children: [
+              return ListView(padding: paddingTab, children: [
                 kepala,
                 const SizedBox(height: 40),
                 Text(pesanGalat(snap.error!), textAlign: TextAlign.center),
@@ -144,31 +200,37 @@ class _TabBerandaState extends State<TabBeranda> {
               ]);
             }
             if (!snap.hasData) {
-              return ListView(padding: const EdgeInsets.all(20), children: [
+              return ListView(padding: paddingTab, children: const [
                 kepala,
-                const SizedBox(height: 80),
-                const Center(child: CircularProgressIndicator()),
+                SizedBox(height: 80),
+                Center(child: CircularProgressIndicator()),
               ]);
             }
             final (lap, trx, kur) = snap.data!;
-            return ListView(padding: const EdgeInsets.fromLTRB(20, 12, 20, 100), children: [
+            return ListView(padding: paddingTab, children: [
               kepala,
-              const SizedBox(height: 16),
+              const SizedBox(height: 18),
               _KartuUntung(lap),
               const SizedBox(height: 12),
               _BannerKur(kur, () => widget.keTab(2)),
-              const SizedBox(height: 20),
+              if (Sesi.briTersambung != true) ...[
+                const SizedBox(height: 12),
+                _AjakSambung(() => widget.keTab(3)),
+              ],
+              const SizedBox(height: 22),
               Row(children: [
                 Text('Catatan hari ini', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600)),
                 const Spacer(),
                 Text('${trx.length} transaksi', style: const TextStyle(color: Warna.redup, fontSize: 13)),
               ]),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               if (trx.isEmpty)
-                const Kartu(
-                  child: Text('Belum ada catatan. Tekan tombol mic lalu sebutkan jualanmu, misalnya '
-                      '"jual cilok 30 bungkus dua ribuan".',
-                      style: TextStyle(color: Warna.redup, height: 1.5)),
+                Kosong(
+                  ikon: Icons.mic_none_rounded,
+                  judul: 'Belum ada catatan hari ini',
+                  isi: 'Tekan tombol mic lalu sebutkan jualanmu. Contoh: "jual cilok tiga puluh bungkus dua ribuan".',
+                  tombol: 'Catat sekarang',
+                  onTombol: widget.onCatat,
                 )
               else
                 ...trx.reversed.map((t) => BarisTransaksi(t as Map<String, dynamic>, onHapus: () => _hapus(t))),
@@ -179,25 +241,40 @@ class _TabBerandaState extends State<TabBeranda> {
 }
 
 class _Sapaan extends StatelessWidget {
+  const _Sapaan();
+
   @override
   Widget build(BuildContext context) {
     final nama = Sesi.nama.isEmpty ? 'Juragan' : Sesi.nama.split(' ').first;
-    final inisial = Sesi.nama.trim().isEmpty
-        ? 'V'
-        : Sesi.nama.trim().split(RegExp(r'\s+')).take(2).map((s) => s[0].toUpperCase()).join();
+    final jam = DateTime.now().hour;
+    final salam = jam < 11 ? 'Selamat pagi' : (jam < 15 ? 'Selamat siang' : (jam < 18 ? 'Selamat sore' : 'Selamat malam'));
     return Row(children: [
       Expanded(
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(Sesi.namaUsaha.isEmpty ? 'Halo,' : Sesi.namaUsaha, style: const TextStyle(color: Warna.redup, fontSize: 13)),
+          Text(salam, style: const TextStyle(color: Warna.redup, fontSize: 13)),
           Text('Halo, $nama', style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.w700)),
         ]),
       ),
-      CircleAvatar(
-        radius: 22,
-        backgroundColor: Warna.khaki,
-        child: Text(inisial, style: const TextStyle(color: Warna.oliveTua, fontWeight: FontWeight.w700)),
-      ),
+      Avatar(Sesi.nama),
     ]);
+  }
+}
+
+class Avatar extends StatelessWidget {
+  const Avatar(this.nama, {super.key, this.radius = 22});
+  final String nama;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context) {
+    final bagian = nama.trim().split(RegExp(r'\s+')).where((s) => s.isNotEmpty).take(2);
+    final inisial = bagian.isEmpty ? 'V' : bagian.map((s) => s[0].toUpperCase()).join();
+    return CircleAvatar(
+      radius: radius,
+      backgroundColor: Warna.khaki,
+      child: Text(inisial,
+          style: TextStyle(color: Warna.oliveTua, fontWeight: FontWeight.w700, fontSize: radius * .7)),
+    );
   }
 }
 
@@ -279,6 +356,73 @@ class _BannerKur extends StatelessWidget {
       );
 }
 
+class _AjakSambung extends StatelessWidget {
+  const _AjakSambung(this.onTap);
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Kartu(
+          child: Row(children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(color: Warna.qris.withOpacity(.12), borderRadius: BorderRadius.circular(12)),
+              child: const Icon(Icons.account_balance_rounded, color: Warna.qris, size: 20),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('Sambungkan rekening BRI', style: TextStyle(fontWeight: FontWeight.w600)),
+                Text('QRIS dan transfer tercatat sendiri', style: TextStyle(fontSize: 12, color: Warna.redup)),
+              ]),
+            ),
+            const Icon(Icons.chevron_right_rounded, color: Warna.redup),
+          ]),
+        ),
+      );
+}
+
+/// Tampilan kosong yang mengajak bertindak, dipakai di semua tab.
+class Kosong extends StatelessWidget {
+  const Kosong({super.key, required this.ikon, required this.judul, required this.isi, this.tombol, this.onTombol, this.tombol2, this.onTombol2});
+  final IconData ikon;
+  final String judul, isi;
+  final String? tombol, tombol2;
+  final VoidCallback? onTombol, onTombol2;
+
+  @override
+  Widget build(BuildContext context) => Kartu(
+        padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+        child: Column(children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(color: Warna.khaki.withOpacity(.6), shape: BoxShape.circle),
+            child: Icon(ikon, color: Warna.oliveTua, size: 28),
+          ),
+          const SizedBox(height: 12),
+          Text(judul, textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+          const SizedBox(height: 6),
+          Text(isi, textAlign: TextAlign.center, style: const TextStyle(color: Warna.redup, fontSize: 13, height: 1.5)),
+          if (tombol != null) ...[
+            const SizedBox(height: 16),
+            FilledButton(
+              onPressed: onTombol,
+              style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(44)),
+              child: Text(tombol!),
+            ),
+          ],
+          if (tombol2 != null) ...[
+            const SizedBox(height: 4),
+            TextButton(onPressed: onTombol2, child: Text(tombol2!)),
+          ],
+        ]),
+      );
+}
+
 class BarisTransaksi extends StatelessWidget {
   const BarisTransaksi(this.t, {super.key, this.onHapus});
   final Map<String, dynamic> t;
@@ -290,6 +434,7 @@ class BarisTransaksi extends StatelessWidget {
     final qris = t['metode'] == 'QRIS';
     final jumlah = t['jumlah'] == null ? '' : '${t['jumlah']} ${t['satuan'] ?? ''}'.trim();
     final sumber = switch (t['sumber']) { 'SUARA' => 'Suara', 'TEKS' => 'Chat', 'QRIS' => 'QRIS', 'MUTASI' => 'Transfer', _ => 'Manual' };
+    final nama = '${t['namaItem']}';
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Kartu(
@@ -311,7 +456,8 @@ class BarisTransaksi extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('${t['namaItem']}', style: const TextStyle(fontWeight: FontWeight.w600)),
+              Text(nama.isEmpty ? nama : nama[0].toUpperCase() + nama.substring(1),
+                  style: const TextStyle(fontWeight: FontWeight.w600)),
               Text([if (jumlah.isNotEmpty) jumlah, sumber].join(' · '),
                   style: const TextStyle(fontSize: 12, color: Warna.redup)),
             ]),

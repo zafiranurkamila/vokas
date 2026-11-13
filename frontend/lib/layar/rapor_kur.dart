@@ -6,9 +6,11 @@ import 'package:google_fonts/google_fonts.dart';
 import '../api.dart';
 import '../sesi.dart';
 import '../tema.dart';
+import 'beranda.dart';
 
 class TabRaporKur extends StatefulWidget {
-  const TabRaporKur({super.key});
+  const TabRaporKur({super.key, required this.onDataBerubah});
+  final VoidCallback onDataBerubah;
 
   @override
   State<TabRaporKur> createState() => _TabRaporKurState();
@@ -16,6 +18,19 @@ class TabRaporKur extends StatefulWidget {
 
 class _TabRaporKurState extends State<TabRaporKur> {
   late final Future<Map<String, dynamic>> _data = Api.raporKur(Sesi.pedagangId!);
+  bool _mengisi = false;
+
+  Future<void> _isiContoh() async {
+    setState(() => _mengisi = true);
+    try {
+      await Api.isiDataContoh(Sesi.pedagangId!);
+      widget.onDataBerubah();
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(pesanGalat(e))));
+    } finally {
+      if (mounted) setState(() => _mengisi = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) => FutureBuilder(
@@ -27,16 +42,29 @@ class _TabRaporKurState extends State<TabRaporKur> {
             const SizedBox(height: 16),
           ]);
           if (snap.hasError) {
-            return ListView(padding: const EdgeInsets.all(20), children: [judul, Text(pesanGalat(snap.error!))]);
+            return ListView(padding: paddingTab, children: [judul, Text(pesanGalat(snap.error!))]);
           }
           if (!snap.hasData) {
-            return ListView(padding: const EdgeInsets.all(20), children: [judul, const SizedBox(height: 60), const Center(child: CircularProgressIndicator())]);
+            return ListView(padding: paddingTab, children: [judul, const SizedBox(height: 60), const Center(child: CircularProgressIndicator())]);
           }
           final r = snap.data!;
           final skor = (r['skor'] as num).toInt();
           final siap = r['siap'] == true;
           final kriteria = ((r['kriteria'] as List?) ?? []).cast<Map<String, dynamic>>();
-          return ListView(padding: const EdgeInsets.fromLTRB(20, 12, 20, 100), children: [
+          if ((r['hariTercatat'] as num? ?? 0) == 0) {
+            return ListView(padding: paddingTab, children: [
+              judul,
+              Kosong(
+                ikon: Icons.verified_outlined,
+                judul: 'Rapor belum bisa dihitung',
+                isi: 'Rapor dihitung dari catatan 90 hari: konsistensi, porsi QRIS, rekening terpisah, '
+                    'margin laba, dan tren omzet. Mulai catat setiap hari, atau isi data contoh untuk melihat contohnya.',
+                tombol: _mengisi ? 'Mengisi...' : 'Isi data contoh 90 hari',
+                onTombol: _mengisi ? null : _isiContoh,
+              ),
+            ]);
+          }
+          return ListView(padding: paddingTab, children: [
             judul,
             Kartu(
               warna: Warna.khaki,

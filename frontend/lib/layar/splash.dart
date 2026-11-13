@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../main.dart';
 import '../tema.dart';
+import 'profil.dart' show PoweredBy;
 
 class LayarSplash extends StatefulWidget {
   const LayarSplash({super.key});
@@ -32,7 +33,8 @@ class _LayarSplashState extends State<LayarSplash> with SingleTickerProviderStat
   @override
   Widget build(BuildContext context) => Scaffold(
         backgroundColor: Warna.oliveTua,
-        body: Center(
+        body: Stack(children: [
+          Center(
           child: FadeTransition(
             opacity: CurvedAnimation(parent: _anim, curve: Curves.easeOut),
             child: ScaleTransition(
@@ -46,6 +48,16 @@ class _LayarSplashState extends State<LayarSplash> with SingleTickerProviderStat
               ]),
             ),
           ),
-        ),
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 36,
+            child: FadeTransition(
+              opacity: CurvedAnimation(parent: _anim, curve: const Interval(.4, 1)),
+              child: const PoweredBy(terang: true),
+            ),
+          ),
+        ]),
       );
 }
