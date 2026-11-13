@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../api.dart';
+import '../notif.dart';
 import '../sesi.dart';
 import '../tema.dart';
 import '../widget/tur.dart';
@@ -35,6 +36,12 @@ class _BerandaState extends State<Beranda> {
   @override
   void initState() {
     super.initState();
+    final n = PusatNotif.i;
+    n.muat();
+    n.onTransaksiBaru = () {
+      if (mounted) setState(() => _versi++);
+    };
+    n.mulaiSimulasi();
     if (!Sesi.sudahTur) {
       WidgetsBinding.instance.addPostFrameCallback((_) => Future.delayed(const Duration(milliseconds: 500), _mulaiTur));
     }
@@ -83,10 +90,23 @@ class _BerandaState extends State<Beranda> {
 
   void _segarkan() => setState(() => _versi++);
 
+  void _keTab(int i) {
+    setState(() => _tab = i);
+    PusatNotif.i.mulaiSimulasi(); // ikut menyala/mati bila status sambungan BRI berubah di Profil
+  }
+
+  @override
+  void dispose() {
+    PusatNotif.i
+      ..hentikanSimulasi()
+      ..onTransaksiBaru = null;
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final tabs = [
-      TabBeranda(key: ValueKey('b$_versi'), keTab: (i) => setState(() => _tab = i), onCatat: _catat),
+      TabBeranda(key: ValueKey('b$_versi'), keTab: _keTab, onCatat: _catat),
       TabLaporan(key: ValueKey('l$_versi'), onDataBerubah: _segarkan),
       TabRaporKur(key: ValueKey('k$_versi'), onDataBerubah: _segarkan),
       TabProfil(key: ValueKey('p$_versi'), onDataBerubah: _segarkan),
@@ -114,11 +134,11 @@ class _BerandaState extends State<Beranda> {
         shape: const CircularNotchedRectangle(),
         notchMargin: 6,
         child: Row(children: [
-          _Nav(Icons.home_rounded, 'Beranda', _tab == 0, () => setState(() => _tab = 0)),
-          _Nav(Icons.bar_chart_rounded, 'Laporan', _tab == 1, () => setState(() => _tab = 1), kunci: _kunciLaporan),
+          _Nav(Icons.home_rounded, 'Beranda', _tab == 0, () => _keTab(0)),
+          _Nav(Icons.bar_chart_rounded, 'Laporan', _tab == 1, () => _keTab(1), kunci: _kunciLaporan),
           const SizedBox(width: 64),
-          _Nav(Icons.verified_outlined, 'Rapor KUR', _tab == 2, () => setState(() => _tab = 2), kunci: _kunciKur),
-          _Nav(Icons.person_outline_rounded, 'Profil', _tab == 3, () => setState(() => _tab = 3), kunci: _kunciProfil),
+          _Nav(Icons.verified_outlined, 'Rapor KUR', _tab == 2, () => _keTab(2), kunci: _kunciKur),
+          _Nav(Icons.person_outline_rounded, 'Profil', _tab == 3, () => _keTab(3), kunci: _kunciProfil),
         ]),
       ),
     );
@@ -190,7 +210,7 @@ class _TabBerandaState extends State<TabBeranda> {
         child: FutureBuilder(
           future: _data,
           builder: (context, snap) {
-            const kepala = _Sapaan();
+            final kepala = _Sapaan(onProfil: () => widget.keTab(3));
             if (snap.hasError) {
               return ListView(padding: paddingTab, children: [
                 kepala,
@@ -200,10 +220,10 @@ class _TabBerandaState extends State<TabBeranda> {
               ]);
             }
             if (!snap.hasData) {
-              return ListView(padding: paddingTab, children: const [
+              return ListView(padding: paddingTab, children: [
                 kepala,
-                SizedBox(height: 80),
-                Center(child: CircularProgressIndicator()),
+                const SizedBox(height: 80),
+                const Center(child: CircularProgressIndicator()),
               ]);
             }
             final (lap, trx, kur) = snap.data!;
@@ -252,7 +272,8 @@ class _TabBerandaState extends State<TabBeranda> {
 }
 
 class _Sapaan extends StatelessWidget {
-  const _Sapaan();
+  const _Sapaan({required this.onProfil});
+  final VoidCallback onProfil;
 
   @override
   Widget build(BuildContext context) {
@@ -266,7 +287,13 @@ class _Sapaan extends StatelessWidget {
           Text('Halo, $nama', style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.w700)),
         ]),
       ),
-      Avatar(Sesi.nama),
+      const TombolNotif(),
+      const SizedBox(width: 8),
+      InkWell(
+        onTap: onProfil,
+        customBorder: const CircleBorder(),
+        child: Avatar(Sesi.nama),
+      ),
     ]);
   }
 }
@@ -545,4 +572,51 @@ class JudulBagian extends StatelessWidget {
             ),
           ),
       ]);
+}
+
+/// Lonceng notifikasi dengan angka belum dibaca.
+class TombolNotif extends StatelessWidget {
+  const TombolNotif({super.key});
+
+  @override
+  Widget build(BuildContext context) => ListenableBuilder(
+        listenable: PusatNotif.i,
+        builder: (_, __) {
+          final n = PusatNotif.i.belumDibaca;
+          return InkWell(
+            customBorder: const CircleBorder(),
+            onTap: () => PusatNotif.i.bukaDaftar?.call(),
+            child: SizedBox(
+              width: 44,
+              height: 44,
+              child: Stack(alignment: Alignment.center, children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: const BoxDecoration(color: Warna.kartu, shape: BoxShape.circle),
+                  child: const Icon(Icons.notifications_none_rounded, color: Warna.tinta),
+                ),
+                if (n > 0)
+                  Positioned(
+                    top: 4,
+                    right: 4,
+                    child: Container(
+                      constraints: const BoxConstraints(minWidth: 18),
+                      height: 18,
+                      padding: const EdgeInsets.symmetric(horizontal: 5),
+                      decoration: BoxDecoration(
+                        color: Warna.merah,
+                        borderRadius: BorderRadius.circular(9),
+                        border: Border.all(color: Warna.latar, width: 1.5),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(n > 9 ? '9+' : '$n',
+                          style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700)),
+                    ),
+                  ),
+              ]),
+            ),
+          );
+        },
+      );
 }

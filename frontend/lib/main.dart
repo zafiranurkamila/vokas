@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import 'layar/beranda.dart';
+import 'layar/notifikasi.dart';
+import 'notif.dart';
 import 'layar/intro.dart';
 import 'layar/masuk.dart';
 import 'layar/sambung_bri.dart';
@@ -11,6 +13,8 @@ import 'tema.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Sesi.muat();
+  PusatNotif.i.bukaDaftar = () =>
+      kunciNavigator.currentState?.push(MaterialPageRoute(builder: (_) => const LayarNotifikasi()));
   runApp(const VokasApp());
 }
 
@@ -20,6 +24,7 @@ class VokasApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) => MaterialApp(
         title: 'VoKas',
+        navigatorKey: kunciNavigator,
         debugShowCheckedModeBanner: false,
         theme: temaVokas(),
         home: const LayarSplash(),

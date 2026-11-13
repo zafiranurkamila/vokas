@@ -44,6 +44,9 @@ class Api {
   static Future<void> hapusDataContoh(String id) async =>
       _hasil(await http.delete(_u('/api/pedagang/$id/data-contoh'), headers: _header));
 
+  static Future<Map<String, dynamic>> imporMutasi(String id, List<Map<String, dynamic>> mutasi) async =>
+      _hasil(await http.post(_u('/api/pedagang/$id/mutasi/impor'), headers: _header, body: jsonEncode(mutasi)));
+
   static Future<Map<String, dynamic>> catatTeks(String id, String teks) async =>
       _hasil(await http.post(_u('/api/pedagang/$id/catat'), headers: _header, body: jsonEncode({'teks': teks})));
 
