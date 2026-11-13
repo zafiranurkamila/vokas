@@ -336,10 +336,15 @@ class _LayarMasukState extends State<LayarMasuk> {
           ),
           if (_briNama != null) ...[
             const SizedBox(height: 10),
-            const Row(children: [
-              Icon(Icons.check_circle_rounded, size: 16, color: Warna.olive),
+            const Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Padding(
+                padding: EdgeInsets.only(top: 1),
+                child: Icon(Icons.check_circle_rounded, size: 16, color: Warna.olive),
+              ),
               SizedBox(width: 6),
-              Text('Rekening BRI ****4521 akan langsung tersambung', style: TextStyle(fontSize: 12.5)),
+              Expanded(
+                child: Text('Rekening BRI ****4521 akan langsung tersambung', style: TextStyle(fontSize: 12.5)),
+              ),
             ]),
           ],
           const SizedBox(height: 20),
