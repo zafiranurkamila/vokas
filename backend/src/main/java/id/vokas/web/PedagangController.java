@@ -10,6 +10,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.UUID;
@@ -35,12 +36,26 @@ public class PedagangController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public Pedagang buat(@Valid @RequestBody PedagangBaru b) {
+        if (b.noWa() != null && repo.findByNoWa(b.noWa()).isPresent())
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Nomor sudah terdaftar, silakan masuk");
         Pedagang p = new Pedagang();
         p.setNama(b.nama());
         p.setNamaUsaha(b.namaUsaha());
         p.setNoWa(b.noWa());
         p.setRekeningTerpisah(b.rekeningTerpisah());
         return repo.save(p);
+    }
+
+    public record Masuk(@Pattern(regexp = "^62\\d{8,13}$", message = "format 62xxxxxxxxxx") String noWa) {}
+
+    /**
+     * Masuk dengan nomor WA. Belum ada OTP: cukup untuk pilot tertutup di balik X-Api-Key.
+     * Sebelum publik, ganti dengan Supabase Auth atau OTP lewat WhatsApp.
+     */
+    @PostMapping("/masuk")
+    public Pedagang masuk(@Valid @RequestBody Masuk b) {
+        return repo.findByNoWa(b.noWa())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Nomor belum terdaftar"));
     }
 
     @GetMapping("/{id}")

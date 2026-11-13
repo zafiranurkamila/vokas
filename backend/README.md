@@ -87,15 +87,21 @@ Contoh body impor:
 Belum ada sambungan langsung ke sistem BRI. Untuk pilot, data mutasi berasal dari ekspor mutasi rekening
 yang diunggah pedagang. Integrasi otomatis butuh kerja sama resmi dengan BRI (misalnya lewat BRIAPI).
 
-## Deploy ke Railway
+## Deploy ke Render (gratis)
 
-1. Push folder ini ke repo GitHub (private).
-2. Di Railway: **New Project > Deploy from GitHub repo**, pilih repo. Karena repo berisi `backend/` dan
-   `frontend/`, buka **Settings > Source > Root Directory** dan isi `backend`. Railway lalu membaca
-   `railway.json` dan `Dockerfile` di folder ini.
-3. Di tab **Variables**, isi semua variabel dari `.env.example`. `PORT` diisi Railway sendiri.
-4. **Settings > Networking > Generate Domain**. URL itu dipakai frontend dan webhook WhatsApp.
-5. Isi `CORS_ORIGINS` dengan domain Firebase, misalnya `https://vokas-xxxx.web.app`.
+`render.yaml` di akar repo sudah menyiapkan semuanya.
+
+1. Daftar di render.com dengan akun GitHub (paket gratis, tanpa kartu kredit).
+2. **New > Blueprint**, pilih repo `vokas`. Render membaca `render.yaml` (root `backend`, Dockerfile, region Singapore).
+3. Isi variabel rahasia yang diminta: Supabase, Gemini, dan WhatsApp (boleh dikosongkan dulu).
+   `VOKAS_API_KEY` dibuat otomatis; salin nilainya untuk `--dart-define=API_KEY` di Flutter.
+4. URL backend: `https://vokas-backend.onrender.com` (atau nama yang diberikan Render).
+
+Keterbatasan paket gratis Render: layanan tidur setelah sekitar 15 menit tanpa request, dan bangun lagi
+butuh kurang lebih satu menit (Spring Boot agak lambat start). Sebelum demo atau presentasi, buka
+`/actuator/health` sekali supaya server sudah bangun.
+
+Railway tetap bisa dipakai (ada `railway.json`); isi Root Directory dengan `backend`.
 
 ## Webhook WhatsApp (nanti)
 
