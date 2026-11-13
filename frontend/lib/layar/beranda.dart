@@ -197,7 +197,7 @@ class _TabBerandaState extends State<TabBeranda> {
       await Api.hapusTransaksi(Sesi.pedagangId!, t['id']);
       setState(() => _data = _muat());
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(pesanGalat(e))));
+      if (mounted) tampilPesan(context, pesanGalat(e), jenis: JenisPesan.gagal);
     }
   }
 

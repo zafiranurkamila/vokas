@@ -90,11 +90,11 @@ class _LayarSambungBriState extends State<LayarSambungBri> {
   void _kirimOtp() {
     if (!_form.currentState!.validate()) return;
     if (_namaPemilik == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cek rekening dulu untuk melihat nama pemilik.')));
+      tampilPesan(context, 'Cek rekening dulu untuk melihat nama pemilik.', jenis: JenisPesan.info);
       return;
     }
     if (!_setujuSk) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Setujui syarat penautan rekening dulu.')));
+      tampilPesan(context, 'Setujui syarat penautan rekening dulu.', jenis: JenisPesan.info);
       return;
     }
     _ke(_Tahap.otp);

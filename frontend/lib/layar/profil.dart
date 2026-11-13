@@ -28,7 +28,7 @@ class _TabProfilState extends State<TabProfil> {
     }).catchError((_) {});
   }
 
-  void _pesan(String s) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s)));
+  void _pesan(String s) => tampilPesan(context, s);
 
   Future<void> _ubahTerpisah(bool v) async {
     setState(() => _terpisah = v);

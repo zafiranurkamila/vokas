@@ -27,7 +27,7 @@ class _TabLaporanState extends State<TabLaporan> {
       await Api.isiDataContoh(Sesi.pedagangId!);
       widget.onDataBerubah();
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(pesanGalat(e))));
+      if (mounted) tampilPesan(context, pesanGalat(e), jenis: JenisPesan.gagal);
     } finally {
       if (mounted) setState(() => _mengisi = false);
     }

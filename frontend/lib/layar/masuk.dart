@@ -46,7 +46,7 @@ class _LayarMasukState extends State<LayarMasuk> {
   String _pinBaru = '';
   bool _lewatBri = false; // true bila daftar/masuk lewat "Lanjut dengan BRImo"
 
-  void _pesan(String s) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s)));
+  void _pesan(String s) => tampilPesan(context, s);
 
   void _ke(_Tahap t) => setState(() {
         _tahap = t;

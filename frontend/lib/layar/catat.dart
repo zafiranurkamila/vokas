@@ -126,7 +126,7 @@ class _LembarCatatState extends State<LembarCatat> with SingleTickerProviderStat
   }
 
   void _pesan(String s) {
-    if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s)));
+    if (mounted) tampilPesan(context, s);
   }
 
   @override

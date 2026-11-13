@@ -62,6 +62,54 @@ ThemeData temaVokas() {
   );
 }
 
+enum JenisPesan { berhasil, info, gagal }
+
+/// Pemberitahuan singkat di bawah layar, mengambang dengan ikon sesuai jenisnya.
+/// Jenis ditebak dari isi kalimat bila tidak disebut.
+void tampilPesan(BuildContext context, String teks, {JenisPesan? jenis}) {
+  final j = jenis ?? _tebakJenis(teks);
+  final (ikon, warna) = switch (j) {
+    JenisPesan.berhasil => (Icons.check_rounded, Warna.olive),
+    JenisPesan.gagal => (Icons.priority_high_rounded, Warna.merah),
+    JenisPesan.info => (Icons.info_outline_rounded, Warna.matahari),
+  };
+  final m = ScaffoldMessenger.of(context);
+  m.hideCurrentSnackBar();
+  m.showSnackBar(SnackBar(
+    behavior: SnackBarBehavior.floating,
+    margin: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+    padding: const EdgeInsets.fromLTRB(12, 12, 16, 12),
+    backgroundColor: Warna.tinta,
+    elevation: 6,
+    duration: Duration(milliseconds: j == JenisPesan.gagal ? 4500 : 3200),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    content: Row(children: [
+      Container(
+        width: 30,
+        height: 30,
+        decoration: BoxDecoration(color: warna, shape: BoxShape.circle),
+        child: Icon(ikon, color: j == JenisPesan.info ? Warna.tinta : Colors.white, size: 18),
+      ),
+      const SizedBox(width: 12),
+      Expanded(
+        child: Text(teks, style: GoogleFonts.poppins(color: Colors.white, fontSize: 13.5, height: 1.4)),
+      ),
+    ]),
+  ));
+}
+
+JenisPesan _tebakJenis(String t) {
+  final s = t.toLowerCase();
+  if (RegExp(r'gagal|salah|tidak valid|ditolak|belum bisa|belum terdaftar|tidak sama|terlalu mudah|kesalahan|tidak ada di server')
+      .hasMatch(s)) {
+    return JenisPesan.gagal;
+  }
+  if (RegExp(r'berhasil|sudah diisi|dihapus|diberikan|terisi|tersambung|dikirim|tercatat').hasMatch(s)) {
+    return JenisPesan.berhasil;
+  }
+  return JenisPesan.info;
+}
+
 /// 60000 -> "Rp60.000"
 String rp(num n) {
   final neg = n < 0;
