@@ -242,7 +242,7 @@ class _IlustrasiSuara extends StatelessWidget {
 class _Gelombang extends StatelessWidget {
   const _Gelombang(this.a);
   final Animation<double> a;
-  static const _tinggi = [8.0, 14, 20, 12, 18, 24, 10, 16, 22, 12, 8, 14, 18, 10];
+  static const _tinggi = <double>[8, 14, 20, 12, 18, 24, 10, 16, 22, 12, 8, 14, 18, 10];
 
   @override
   Widget build(BuildContext context) => AnimatedBuilder(
