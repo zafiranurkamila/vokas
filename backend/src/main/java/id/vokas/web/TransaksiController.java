@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import id.vokas.parser.HasilBaca;
 import id.vokas.parser.PembacaCatatan;
+import id.vokas.service.DataContohService;
 import id.vokas.service.LaporanService;
 import id.vokas.service.SkorKurService;
 import id.vokas.service.TransaksiService;
@@ -36,12 +37,15 @@ public class TransaksiController {
     private final LaporanService laporan;
     private final SkorKurService kur;
     private final PembacaCatatan pembaca;
+    private final DataContohService dataContoh;
 
-    public TransaksiController(TransaksiService transaksi, LaporanService laporan, SkorKurService kur, PembacaCatatan pembaca) {
+    public TransaksiController(TransaksiService transaksi, LaporanService laporan, SkorKurService kur,
+                               PembacaCatatan pembaca, DataContohService dataContoh) {
         this.transaksi = transaksi;
         this.laporan = laporan;
         this.kur = kur;
         this.pembaca = pembaca;
+        this.dataContoh = dataContoh;
     }
 
     public record Catatan(@NotBlank @Size(max = 1000) String teks) {}
@@ -122,6 +126,16 @@ public class TransaksiController {
                                           @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate sampai) {
         LocalDate s = sampai != null ? sampai : transaksi.hariIni();
         return laporan.buat(id, dari != null ? dari : s.minusDays(6), s);
+    }
+
+    @PostMapping("/pedagang/{id}/data-contoh")
+    public Map<String, Integer> isiDataContoh(@PathVariable UUID id) {
+        return Map.of("dibuat", dataContoh.isi(id));
+    }
+
+    @DeleteMapping("/pedagang/{id}/data-contoh")
+    public Map<String, Integer> hapusDataContoh(@PathVariable UUID id) {
+        return Map.of("dihapus", dataContoh.hapus(id));
     }
 
     @GetMapping("/pedagang/{id}/rapor-kur")

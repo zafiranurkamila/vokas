@@ -9,5 +9,6 @@ import java.util.UUID;
 public interface TransaksiRepo extends JpaRepository<Transaksi, UUID> {
     List<Transaksi> findByPedagangIdAndTanggalBetweenOrderByTanggalAscDibuatAsc(UUID pedagangId, LocalDate dari, LocalDate sampai);
     List<Transaksi> findByPedagangIdAndPerluCekTrueOrderByTanggalDesc(UUID pedagangId);
+    int deleteByPedagangIdAndCatatanAsli(UUID pedagangId, String catatanAsli);
     boolean existsByPedagangIdAndRefEksternal(UUID pedagangId, String refEksternal);
 }

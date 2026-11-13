@@ -35,6 +35,15 @@ class Api {
   static Future<Map<String, dynamic>> pedagang(String id) async =>
       _hasil(await http.get(_u('/api/pedagang/$id'), headers: _header));
 
+  static Future<Map<String, dynamic>> ubahPedagang(String id, Map<String, dynamic> data) async =>
+      _hasil(await http.patch(_u('/api/pedagang/$id'), headers: _header, body: jsonEncode(data)));
+
+  static Future<void> isiDataContoh(String id) async =>
+      _hasil(await http.post(_u('/api/pedagang/$id/data-contoh'), headers: _header));
+
+  static Future<void> hapusDataContoh(String id) async =>
+      _hasil(await http.delete(_u('/api/pedagang/$id/data-contoh'), headers: _header));
+
   static Future<Map<String, dynamic>> catatTeks(String id, String teks) async =>
       _hasil(await http.post(_u('/api/pedagang/$id/catat'), headers: _header, body: jsonEncode({'teks': teks})));
 
