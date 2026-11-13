@@ -220,8 +220,8 @@ class _KartuUntung extends StatelessWidget {
         Text(rp(laba), style: GoogleFonts.poppins(color: Colors.white, fontSize: 30, fontWeight: FontWeight.w700)),
         const SizedBox(height: 14),
         Row(children: [
-          _Angka('Masuk', rp(omzet), Icons.south_west_rounded),
-          _Angka('Keluar', rp(keluar), Icons.north_east_rounded),
+          _Angka('Masuk', rp(omzet), Icons.arrow_downward_rounded),
+          _Angka('Keluar', rp(keluar), Icons.arrow_upward_rounded),
           _Angka('Lewat QRIS', rp(qris), Icons.qr_code_2_rounded),
         ]),
       ]),
@@ -303,7 +303,7 @@ class BarisTransaksi extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
-              qris ? Icons.qr_code_2_rounded : (masuk ? Icons.south_west_rounded : Icons.north_east_rounded),
+              qris ? Icons.qr_code_2_rounded : (masuk ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded),
               color: qris ? Warna.qris : (masuk ? Warna.oliveTua : Warna.merah),
               size: 20,
             ),

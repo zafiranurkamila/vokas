@@ -223,7 +223,7 @@ class _IlustrasiSuara extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(color: Warna.khaki, borderRadius: BorderRadius.circular(12)),
-                child: const Icon(Icons.south_west_rounded, color: Warna.oliveTua, size: 20),
+                child: const Icon(Icons.arrow_downward_rounded, color: Warna.oliveTua, size: 20),
               ),
               const SizedBox(width: 12),
               const Expanded(
