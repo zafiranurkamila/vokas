@@ -44,7 +44,7 @@ class _LayarMasukState extends State<LayarMasuk> {
   String _noWa = '';
   Map<String, dynamic>? _pedagang;
   String _pinBaru = '';
-  String? _briNama; // terisi bila daftar lewat "Lanjut dengan BRImo"
+  bool _lewatBri = false; // true bila daftar/masuk lewat "Lanjut dengan BRImo"
 
   void _pesan(String s) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s)));
 
@@ -152,7 +152,8 @@ class _LayarMasukState extends State<LayarMasuk> {
 
   Future<void> _selesai() async {
     await Sesi.simpanPedagang(_pedagang!);
-    if (_briNama != null) await Sesi.simpanRekening('4521', _briNama!);
+    // pemilik rekening = pemilik akun yang benar-benar masuk (bisa akun lama bila nomornya sudah terdaftar)
+    if (_lewatBri) await Sesi.simpanRekening('4521', '${_pedagang!['nama'] ?? ''}'.toUpperCase());
     if (mounted) lanjut(context);
   }
 
@@ -164,15 +165,11 @@ class _LayarMasukState extends State<LayarMasuk> {
       backgroundColor: Warna.latar,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (_) => const _LembarBrimo(),
+      builder: (_) => _LembarBrimo(nama: _nama.text.trim()),
     );
     if (ok != true) return;
-    setState(() {
-      _daftar = true;
-      _briNama = 'Sri Wahyuni';
-      _nama.text = 'Sri Wahyuni';
-    });
-    _pesan('Data dari BRI terisi (simulasi). Lengkapi nomor WhatsApp.');
+    setState(() => _lewatBri = true);
+    _pesan('Izin BRI diberikan (simulasi). Lengkapi data lalu lanjutkan.');
   }
 
   Future<void> _lewatGoogle() async {
@@ -180,12 +177,12 @@ class _LayarMasukState extends State<LayarMasuk> {
       context: context,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (_) => const _LembarGoogle(),
+      builder: (_) => _LembarGoogle(nama: _nama.text.trim()),
     );
     if (nama == null) return;
     setState(() {
       _daftar = true;
-      _nama.text = nama;
+      if (nama.isNotEmpty) _nama.text = nama;
     });
     _pesan('Nama terisi dari akun Google (simulasi). Lengkapi nomor WhatsApp.');
   }
@@ -334,7 +331,7 @@ class _LayarMasukState extends State<LayarMasuk> {
                 labelText: 'Nomor WhatsApp', hintText: '0812xxxxxxx', prefixIcon: Icon(Icons.phone_outlined)),
             validator: (v) => normalisasiWa(v ?? '') == null ? 'Nomor WhatsApp tidak valid' : null,
           ),
-          if (_briNama != null) ...[
+          if (_lewatBri) ...[
             const SizedBox(height: 10),
             const Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Padding(
@@ -343,7 +340,7 @@ class _LayarMasukState extends State<LayarMasuk> {
               ),
               SizedBox(width: 6),
               Expanded(
-                child: Text('Rekening BRI ****4521 akan langsung tersambung', style: TextStyle(fontSize: 12.5)),
+                child: Text('Rekening BRI ****4521 akan langsung tersambung ke akun ini', style: TextStyle(fontSize: 12.5)),
               ),
             ]),
           ],
@@ -460,7 +457,8 @@ class _KirimUlangState extends State<_KirimUlang> {
 
 /// Simulasi layar izin dari BRImo.
 class _LembarBrimo extends StatefulWidget {
-  const _LembarBrimo();
+  const _LembarBrimo({required this.nama});
+  final String nama;
 
   @override
   State<_LembarBrimo> createState() => _LembarBrimoState();
@@ -504,11 +502,12 @@ class _LembarBrimoState extends State<_LembarBrimo> {
                   ),
                 ]),
                 const SizedBox(height: 18),
-                const _BarisData('Nama', 'SRI WAHYUNI'),
+                _BarisData('Nama', widget.nama.isEmpty ? 'Sesuai data rekeningmu' : widget.nama.toUpperCase()),
                 const _BarisData('Rekening', '****4521 (Tabungan)'),
                 const _BarisData('Akses', 'Mutasi QRIS dan transfer'),
                 const SizedBox(height: 16),
-                const CatatanDemo('Simulasi. Data di atas adalah data contoh, bukan data BRI sungguhan.'),
+                const CatatanDemo('Simulasi. Versi resmi mengambil nama dan rekening langsung dari BRI, '
+                    'jadi namanya selalu sama dengan pemilik akun.'),
                 const SizedBox(height: 18),
                 FilledButton(
                   onPressed: () => Navigator.of(context).pop(true),
@@ -537,7 +536,8 @@ class _BarisData extends StatelessWidget {
 
 /// Simulasi pemilih akun Google.
 class _LembarGoogle extends StatelessWidget {
-  const _LembarGoogle();
+  const _LembarGoogle({required this.nama});
+  final String nama;
 
   @override
   Widget build(BuildContext context) => Padding(
@@ -548,9 +548,11 @@ class _LembarGoogle extends StatelessWidget {
               textAlign: TextAlign.center, style: TextStyle(color: Warna.redup, fontSize: 13)),
           const SizedBox(height: 16),
           ListTile(
-            onTap: () => Navigator.of(context).pop('Sri Wahyuni'),
-            leading: const CircleAvatar(backgroundColor: Warna.khaki, child: Text('S', style: TextStyle(color: Warna.oliveTua))),
-            title: const Text('Sri Wahyuni'),
+            onTap: () => Navigator.of(context).pop(nama),
+            leading: CircleAvatar(
+                backgroundColor: Warna.khaki,
+                child: Text(nama.isEmpty ? 'V' : nama[0].toUpperCase(), style: const TextStyle(color: Warna.oliveTua))),
+            title: Text(nama.isEmpty ? 'Pengguna VoKas' : nama),
             subtitle: const Text('akun.demo@gmail.com'),
           ),
           const Divider(color: Warna.garis),

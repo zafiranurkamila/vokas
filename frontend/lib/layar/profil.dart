@@ -188,25 +188,20 @@ class _TabProfilState extends State<TabProfil> {
               'Data contoh ditandai dan bisa dihapus kapan saja.',
               style: TextStyle(fontSize: 13, color: Warna.redup, height: 1.5)),
           const SizedBox(height: 12),
-          Row(children: [
-            Expanded(
-              child: FilledButton(
-                onPressed: _sibuk ? null : () => _dataContoh(true),
-                style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(42)),
-                child: _sibuk
-                    ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                    : const Text('Isi data contoh'),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: OutlinedButton(
-                onPressed: _sibuk ? null : () => _dataContoh(false),
-                style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(42)),
-                child: const Text('Hapus'),
-              ),
-            ),
-          ]),
+          FilledButton.icon(
+            onPressed: _sibuk ? null : () => _dataContoh(true),
+            style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(46)),
+            icon: _sibuk
+                ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                : const Icon(Icons.auto_awesome_outlined, size: 18),
+            label: const Text('Isi data contoh 90 hari'),
+          ),
+          const SizedBox(height: 4),
+          TextButton(
+            onPressed: _sibuk ? null : () => _dataContoh(false),
+            style: TextButton.styleFrom(foregroundColor: Warna.merah),
+            child: const Text('Hapus data contoh'),
+          ),
         ]),
       ),
       const SizedBox(height: 22),

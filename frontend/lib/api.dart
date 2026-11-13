@@ -84,6 +84,9 @@ class ApiGagal implements Exception {
 
 /// Pesan ramah untuk ditampilkan di SnackBar.
 String pesanGalat(Object e) {
+  if (e is ApiGagal && e.pesan.startsWith('No static resource')) {
+    return 'Fitur ini belum ada di server. Jalankan ulang backend versi terbaru.';
+  }
   if (e is ApiGagal) return e.pesan;
   return 'Server belum bisa dihubungi. Cek koneksi atau alamat API.';
 }
