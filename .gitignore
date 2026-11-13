@@ -1,0 +1,15 @@
+# backend
+backend/target/
+# frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.firebase/
+# rahasia
+.env
+**/.env
+*.env.local
+# editor
+.idea/
+.vscode/
+*.iml
+.DS_Store
