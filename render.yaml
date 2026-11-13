@@ -23,7 +23,7 @@ services:
       - key: VOKAS_API_KEY
         generateValue: true
       - key: CORS_ORIGINS
-        value: http://localhost:5173,https://*.web.app,https://*.firebaseapp.com
+        value: http://localhost:*,https://*.web.app,https://*.firebaseapp.com
       - key: WA_VERIFY_TOKEN
         sync: false
       - key: WA_ACCESS_TOKEN
