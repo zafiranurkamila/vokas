@@ -16,7 +16,7 @@ public record VokasProperties(String apiKey, String corsOrigins, String zonaWakt
         }
     }
 
-    public record Gemini(String apiKey, String model) {
+    public record Gemini(String apiKey, String model, String modelCadangan) {
         public boolean aktif() { return apiKey != null && !apiKey.isBlank(); }
     }
 
