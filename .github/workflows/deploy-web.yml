@@ -1,6 +1,6 @@
 # Build Flutter web dan deploy ke Firebase Hosting setiap ada push ke main yang mengubah frontend.
 # Butuh di GitHub (Settings > Secrets and variables > Actions):
-#   secret   FIREBASE_SERVICE_ACCOUNT : isi JSON service account project vokas-4e7cc
+#   secret   FIREBASE_SERVICE_ACCOUNT_VOKAS_4E7CC : dibuat otomatis oleh `firebase init hosting:github`
 #   secret   VOKAS_API_KEY            : sama dengan VOKAS_API_KEY di Render
 #   variable API_URL                  : https://vokas-backend.onrender.com
 name: Deploy web ke Firebase
@@ -50,7 +50,7 @@ jobs:
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_VOKAS_4E7CC }}
           projectId: vokas-4e7cc
           channelId: live
           entryPoint: frontend
