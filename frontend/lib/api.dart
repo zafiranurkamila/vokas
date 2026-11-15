@@ -13,7 +13,7 @@ class Api {
   static const _kunci = String.fromEnvironment('API_KEY');
 
   /// Batas menunggu server gratis (Render) yang sedang bangun dari tidur.
-  static const _batasBangun = Duration(seconds: 90);
+  static const _batasBangun = Duration(seconds: 180);
 
   /// Dipanggil saat aplikasi sedang menunggu server bangun, supaya layar bisa memberi tahu pengguna.
   static void Function(bool menunggu)? onMenungguServer;

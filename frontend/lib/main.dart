@@ -93,13 +93,13 @@ void _tampilMenunggu(bool menunggu) {
     behavior: SnackBarBehavior.floating,
     margin: EdgeInsets.fromLTRB(16, 0, 16, 20),
     backgroundColor: Warna.tinta,
-    duration: Duration(seconds: 90),
+    duration: Duration(seconds: 180),
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(16))),
     content: Row(children: [
       SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Warna.matahari)),
       SizedBox(width: 14),
       Expanded(
-        child: Text('Server sedang dinyalakan, tunggu sebentar (biasanya kurang dari 1 menit)...',
+        child: Text('Server sedang dinyalakan, tunggu sebentar (bisa sampai 2 menit)...',
             style: TextStyle(color: Colors.white, fontSize: 13.5, height: 1.4)),
       ),
     ]),
