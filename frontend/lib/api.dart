@@ -10,7 +10,9 @@ import 'package:http_parser/http_parser.dart';
 ///   flutter build web --dart-define=API_URL=https://xxx.onrender.com --dart-define=API_KEY=...
 class Api {
   /// Bawaan: server produksi di Render. Untuk tes lokal: --dart-define=API_URL=http://localhost:8080
-  static const base = String.fromEnvironment('API_URL', defaultValue: 'https://vokas-backend.onrender.com');
+  /// Catatan: --dart-define=API_URL= (kosong) tetap dianggap "terisi", jadi nilai kosong ditangani di sini.
+  static const _urlBuild = String.fromEnvironment('API_URL');
+  static const base = _urlBuild == '' ? 'https://vokas-backend.onrender.com' : _urlBuild;
   static const _kunci = String.fromEnvironment('API_KEY');
 
   /// Batas menunggu server gratis (Render) yang sedang bangun dari tidur.
