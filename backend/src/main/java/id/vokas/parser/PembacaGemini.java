@@ -92,7 +92,7 @@ public class PembacaGemini implements PembacaCatatan {
                     "contents", List.of(Map.of("role", "user", "parts", List.of(Map.of("text", pertanyaan)))),
                     "generationConfig", gen);
             try {
-                JsonNode res = http.post().uri(model + ":generateContent")
+                JsonNode res = http.post().uri(java.net.URI.create(BASE + model + ":generateContent"))
                         .header("x-goog-api-key", cfg.apiKey())
                         .contentType(MediaType.APPLICATION_JSON)
                         .body(body).retrieve().body(JsonNode.class);
@@ -193,7 +193,7 @@ public class PembacaGemini implements PembacaCatatan {
     private HasilBaca panggilSekali(String model, Map<String, Object> body) {
         try {
             JsonNode res = http.post()
-                    .uri(model + ":generateContent")
+                    .uri(java.net.URI.create(BASE + model + ":generateContent"))
                     .header("x-goog-api-key", cfg.apiKey())
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(body)
