@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../api.dart';
 import '../sesi.dart';
@@ -20,6 +21,45 @@ class TabRaporKur extends StatefulWidget {
 class _TabRaporKurState extends State<TabRaporKur> {
   late final Future<Map<String, dynamic>> _data = Api.raporKur(Sesi.pedagangId!);
   bool _mengisi = false;
+  bool _membagikan = false;
+
+  Future<void> _bagikan(Map<String, dynamic> r) async {
+    setState(() => _membagikan = true);
+    try {
+      final s = DateTime.now();
+      final l = await Api.laporan(Sesi.pedagangId!, dari: tglIso(s.subtract(const Duration(days: 29))), sampai: tglIso(s));
+      final b = StringBuffer()
+        ..writeln('RAPOR KESIAPAN KUR - VoKas')
+        ..writeln('${Sesi.namaUsaha.isEmpty ? '-' : Sesi.namaUsaha} (${Sesi.nama})')
+        ..writeln('No. WA: ${samarkanWa(Sesi.noWa)}')
+        ..writeln(Sesi.briTersambung == true ? 'Rekening BRI: ****${Sesi.briRekening}' : 'Rekening BRI: belum tersambung')
+        ..writeln(Sesi.lokasiUsaha.isEmpty ? 'Lokasi usaha: -' : 'Lokasi usaha (perkiraan): ${Sesi.lokasiUsaha}')
+        ..writeln('Tanggal: ${tglIso(s)}')
+        ..writeln()
+        ..writeln('Skor: ${r['skor']}/100 - ${r['status']}')
+        ..writeln('Hari tercatat: ${r['hariTercatat']} dari ${r['hariTotal']} hari')
+        ..writeln()
+        ..writeln('30 hari terakhir:')
+        ..writeln('- Omzet: ${rp((l['omzet'] as num?) ?? 0)}')
+        ..writeln('- Pengeluaran: ${rp((l['pengeluaran'] as num?) ?? 0)}')
+        ..writeln('- Laba: ${rp((l['laba'] as num?) ?? 0)}')
+        ..writeln('- Lewat QRIS: ${rp((l['omzetQris'] as num?) ?? 0)}')
+        ..writeln()
+        ..writeln('Rincian skor:');
+      for (final k in ((r['kriteria'] as List?) ?? []).cast<Map<String, dynamic>>()) {
+        b.writeln('- ${k['nama']}: ${k['poin']}/${k['bobot']} (${k['keterangan']})');
+      }
+      b
+        ..writeln()
+        ..writeln('Dibuat dari catatan harian di aplikasi VoKas. Rapor ini alat bantu, bukan keputusan kredit; '
+            'persetujuan KUR tetap ditentukan BRI.');
+      await Share.share(b.toString(), subject: 'Rapor Kesiapan KUR ${Sesi.namaUsaha}');
+    } catch (e) {
+      if (mounted) tampilPesan(context, pesanGalat(e), jenis: JenisPesan.gagal);
+    } finally {
+      if (mounted) setState(() => _membagikan = false);
+    }
+  }
 
   Future<void> _isiContoh() async {
     setState(() => _mengisi = true);
@@ -104,6 +144,17 @@ class _TabRaporKurState extends State<TabRaporKur> {
                 for (final k in kriteria) _BarisKriteria(k),
               ]),
             ),
+            const SizedBox(height: 14),
+            FilledButton.icon(
+              onPressed: _membagikan ? null : () => _bagikan(r),
+              icon: _membagikan
+                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : const Icon(Icons.ios_share_rounded),
+              label: const Text('Bagikan rapor ke petugas BRI'),
+            ),
+            const SizedBox(height: 6),
+            const Text('Ringkasan omzet, laba, dan skor bisa dikirim lewat WhatsApp atau email, atau dibawa saat ke BRI.',
+                textAlign: TextAlign.center, style: TextStyle(fontSize: 12, color: Warna.redup, height: 1.45)),
             const SizedBox(height: 16),
             const _ApaItuKur(),
             const SizedBox(height: 12),
