@@ -9,6 +9,10 @@ services:
     rootDir: backend
     dockerfilePath: ./Dockerfile
     healthCheckPath: /actuator/health
+    # deploy ulang hanya bila backend berubah (push frontend tidak me-restart server)
+    buildFilter:
+      paths:
+        - backend/**
     envVars:
       - key: SUPABASE_DB_URL
         sync: false
