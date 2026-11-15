@@ -19,6 +19,7 @@ Future<void> main() async {
   Api.bangunkan(); // tidak ditunggu: server mulai menyala selama splash dan intro tampil
   await Izin.siapkan();
   Izin.onNotifDitekan = () => PusatNotif.i.bukaDaftar?.call();
+  Api.onMenungguServer = _tampilMenunggu;
   PusatNotif.i.bukaDaftar = () =>
       kunciNavigator.currentState?.push(MaterialPageRoute(builder: (_) => const LayarNotifikasi()));
   runApp(const VokasApp());
@@ -47,12 +48,15 @@ class _VokasAppState extends State<VokasApp> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     PusatNotif.i.diDepan = state == AppLifecycleState.resumed;
+    if (state == AppLifecycleState.paused) PusatNotif.i.keLatar();
+    if (state == AppLifecycleState.resumed) PusatNotif.i.keDepan();
   }
 
   @override
   Widget build(BuildContext context) => MaterialApp(
         title: 'VoKas',
         navigatorKey: kunciNavigator,
+        scaffoldMessengerKey: kunciPesan,
         debugShowCheckedModeBanner: false,
         theme: temaVokas(),
         home: const LayarSplash(),
@@ -78,3 +82,29 @@ void lanjut(BuildContext context) {
     (_) => false,
   );
 }
+
+/// Pemberitahuan global (dipakai saat menunggu server bangun, di layar mana pun).
+final kunciPesan = GlobalKey<ScaffoldMessengerState>();
+
+void _tampilMenunggu(bool menunggu) {
+  final m = kunciPesan.currentState;
+  if (m == null) return;
+  m.hideCurrentSnackBar();
+  if (!menunggu) return;
+  m.showSnackBar(const SnackBar(
+    behavior: SnackBarBehavior.floating,
+    margin: EdgeInsets.fromLTRB(16, 0, 16, 20),
+    backgroundColor: Warna.tinta,
+    duration: Duration(seconds: 180),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(16))),
+    content: Row(children: [
+      SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Warna.matahari)),
+      SizedBox(width: 14),
+      Expanded(
+        child: Text('Menyiapkan VoKas, sebentar ya...',
+            style: TextStyle(color: Colors.white, fontSize: 13.5, height: 1.4)),
+      ),
+    ]),
+  ));
+}
+

@@ -3,6 +3,8 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:record/record.dart';
+import 'package:timezone/data/latest_all.dart' as tzdata;
+import 'package:timezone/timezone.dart' as tz;
 
 import 'sesi.dart';
 
@@ -17,6 +19,7 @@ class Izin {
 
   static Future<void> siapkan() async {
     if (kIsWeb || _siap) return;
+    tzdata.initializeTimeZones();
     await _notif.initialize(
       const InitializationSettings(android: AndroidInitializationSettings('@mipmap/launcher_icon')),
       onDidReceiveNotificationResponse: (_) => onNotifDitekan?.call(),
@@ -68,11 +71,31 @@ class Izin {
   static Future<void> tampilkan(String judul, String isi) async {
     if (kIsWeb) return;
     await siapkan();
-    await _notif.show(
-      _id++,
+    await _notif.show(_id++, judul, isi, _detail);
+  }
+
+  /// Dijadwalkan ke sistem Android: tetap muncul walau aplikasi sudah ditutup.
+  static Future<void> jadwalkan(int id, String judul, String isi, DateTime waktu) async {
+    if (kIsWeb) return;
+    await siapkan();
+    await _notif.zonedSchedule(
+      id,
       judul,
       isi,
-      const NotificationDetails(
+      tz.TZDateTime.from(waktu.toUtc(), tz.UTC),
+      _detail,
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+    );
+  }
+
+  static Future<void> batal(int id) async {
+    if (kIsWeb) return;
+    await siapkan();
+    await _notif.cancel(id);
+  }
+
+  static const _detail = NotificationDetails(
         android: AndroidNotificationDetails(
           'vokas_uang_masuk',
           'Uang masuk',
@@ -80,7 +103,5 @@ class Izin {
           importance: Importance.high,
           priority: Priority.high,
         ),
-      ),
-    );
-  }
+      );
 }

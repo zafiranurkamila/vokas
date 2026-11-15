@@ -40,7 +40,8 @@ class _BerandaState extends State<Beranda> {
   void initState() {
     super.initState();
     final n = PusatNotif.i;
-    n.muat();
+    // QRIS yang masuk selama aplikasi ditutup dicatat setelah riwayat notifikasi dimuat
+    n.muat().then((_) => n.prosesTertunda());
     n.onTransaksiBaru = () {
       if (mounted) setState(() => _versi++);
     };
@@ -716,7 +717,7 @@ class _MemuatServerState extends State<MemuatServer> {
           child: const Padding(
             padding: EdgeInsets.fromLTRB(24, 16, 24, 0),
             child: Text(
-              'Server sedang dinyalakan, biasanya kurang dari 1 menit. Setelah ini akan cepat.',
+              'Menyiapkan datamu, sebentar ya...',
               textAlign: TextAlign.center,
               style: TextStyle(color: Warna.redup, fontSize: 13, height: 1.5),
             ),

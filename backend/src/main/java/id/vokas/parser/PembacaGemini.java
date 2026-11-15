@@ -44,12 +44,18 @@ public class PembacaGemini implements PembacaCatatan {
     private final RestClient http;
     private final ObjectMapper json;
 
+    /** Model yang dijawab 404 (sudah pensiun) tidak dicoba lagi selama server menyala. */
+    private final Set<String> pensiun = java.util.concurrent.ConcurrentHashMap.newKeySet();
+
+    /** Model terakhir yang berhasil menjawab; dicoba paling awal supaya tidak mengulang model yang gagal. */
+    private volatile String terakhirBerhasil;
+
     public PembacaGemini(VokasProperties props, ObjectMapper json) {
         this.cfg = props.gemini();
         this.json = json;
         SimpleClientHttpRequestFactory f = new SimpleClientHttpRequestFactory();
         f.setConnectTimeout(10_000);
-        f.setReadTimeout(45_000);
+        f.setReadTimeout(30_000);
         this.http = RestClient.builder().requestFactory(f).baseUrl(BASE).build();
     }
 
@@ -92,13 +98,16 @@ public class PembacaGemini implements PembacaCatatan {
                     "contents", List.of(Map.of("role", "user", "parts", List.of(Map.of("text", pertanyaan)))),
                     "generationConfig", gen);
             try {
-                JsonNode res = http.post().uri(model + ":generateContent")
+                JsonNode res = http.post().uri(java.net.URI.create(BASE + model + ":generateContent"))
                         .header("x-goog-api-key", cfg.apiKey())
                         .contentType(MediaType.APPLICATION_JSON)
                         .body(body).retrieve().body(JsonNode.class);
                 StringBuilder sb = new StringBuilder();
                 if (res != null) for (JsonNode p : res.at("/candidates/0/content/parts")) sb.append(p.path("text").asText(""));
-                if (!sb.isEmpty()) return new Jawaban(sb.toString().trim(), null);
+                if (!sb.isEmpty()) {
+                    terakhirBerhasil = model;
+                    return new Jawaban(sb.toString().trim(), null);
+                }
                 galat = "AI tidak memberi jawaban, coba tanya dengan kalimat lain";
             } catch (HttpClientErrorException.TooManyRequests e) {
                 return new Jawaban(null, "Kuota AI gratis sedang penuh, coba lagi sebentar");
@@ -106,6 +115,7 @@ public class PembacaGemini implements PembacaCatatan {
                 int s = e.getStatusCode().value();
                 log.warn("Tanya AI ({}) ditolak {}: {}", model, s, e.getResponseBodyAsString());
                 if (s == 401 || s == 403) return new Jawaban(null, "API key Gemini salah atau belum aktif");
+                if (s == 404) pensiun.add(model);
                 galat = "AI menolak permintaan (" + s + ")";
             } catch (RestClientException e) {
                 log.warn("Tanya AI ({}) gagal: {}", model, e.toString());
@@ -133,6 +143,7 @@ public class PembacaGemini implements PembacaCatatan {
             if (h.galat() != null && h.galat().startsWith(LAMBAT)) timeoutDi = model;
             if (h.galat() == null) {
                 if (!model.equals(cfg.model())) log.info("Gemini memakai model cadangan {}", model);
+                terakhirBerhasil = model;
                 return h;
             }
             boolean sementara = h.galat().startsWith(SEMENTARA);
@@ -164,14 +175,19 @@ public class PembacaGemini implements PembacaCatatan {
     }
 
     List<String> urutanModel() {
-        List<String> urutan = new ArrayList<>(List.of(cfg.model(), cfg.model()));
+        List<String> semua = new ArrayList<>();
+        String awal = terakhirBerhasil != null ? terakhirBerhasil : cfg.model();
+        semua.add(awal);
+        semua.add(awal);
+        if (!cfg.model().equals(awal)) semua.add(cfg.model());
         if (cfg.modelCadangan() != null) {
             for (String m : cfg.modelCadangan().split(",")) {
                 String t = m.trim();
-                if (!t.isEmpty() && !urutan.contains(t)) urutan.add(t);
+                if (!t.isEmpty() && !semua.contains(t)) semua.add(t);
             }
         }
-        return urutan;
+        List<String> aktif = semua.stream().filter(m -> !pensiun.contains(m)).toList();
+        return aktif.isEmpty() ? semua : new ArrayList<>(aktif);   // semua pensiun: coba ulang, siapa tahu salah sesaat
     }
 
     /** Model yang dicoba berurutan; dipakai juga oleh endpoint cek. */
@@ -193,7 +209,7 @@ public class PembacaGemini implements PembacaCatatan {
     private HasilBaca panggilSekali(String model, Map<String, Object> body) {
         try {
             JsonNode res = http.post()
-                    .uri(model + ":generateContent")
+                    .uri(java.net.URI.create(BASE + model + ":generateContent"))
                     .header("x-goog-api-key", cfg.apiKey())
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(body)
@@ -223,11 +239,12 @@ public class PembacaGemini implements PembacaCatatan {
         } catch (HttpClientErrorException e) {
             // 400 = permintaan/format audio ditolak, 401/403 = API key salah, 404 = nama model tidak ada
             String isi = e.getResponseBodyAsString();
-            log.warn("Gemini menolak ({}): {}", e.getStatusCode().value(), isi);
+            log.warn("Gemini ({}) menolak ({}): {}", model, e.getStatusCode().value(), isi);
+            if (e.getStatusCode().value() == 404) pensiun.add(model);
             String sebab = switch (e.getStatusCode().value()) {
                 case 400 -> "AI menolak permintaan (400). Cek API key dan format audio.";
                 case 401, 403 -> "API key Gemini salah atau belum aktif (" + e.getStatusCode().value() + ").";
-                case 404 -> "Model AI '" + cfg.model() + "' tidak ditemukan (404). Ganti GEMINI_MODEL.";
+                case 404 -> "Model AI '" + model + "' tidak ditemukan (404). Ganti GEMINI_MODEL.";
                 default -> "AI menolak permintaan (" + e.getStatusCode().value() + ").";
             };
             return HasilBaca.gagal(nama(), sebab);

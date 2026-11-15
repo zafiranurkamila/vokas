@@ -33,6 +33,54 @@ class _LayarTanyaAiState extends State<LayarTanyaAi> {
   final _gulir = ScrollController();
   final List<_Pesan> _pesan = [];
   bool _menunggu = false;
+  bool _memuat = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _muatRiwayat();
+  }
+
+  /// Percakapan sebelumnya diambil dari server, jadi tidak hilang saat layar ditutup.
+  Future<void> _muatRiwayat() async {
+    try {
+      final r = await Api.riwayatAi(Sesi.pedagangId!, 'TANYA');
+      if (!mounted) return;
+      setState(() {
+        for (final e in r.cast<Map<String, dynamic>>()) {
+          _pesan.add(_Pesan(true, '${e['masukan'] ?? ''}'));
+          final j = e['jawaban'] as String?;
+          _pesan.add(j != null ? _Pesan(false, j) : _Pesan(false, (e['galat'] as String?) ?? 'AI belum menjawab.', galat: true));
+        }
+      });
+      _keBawah();
+    } catch (_) {
+      // riwayat gagal dimuat: tetap bisa bertanya seperti biasa
+    } finally {
+      if (mounted) setState(() => _memuat = false);
+    }
+  }
+
+  Future<void> _hapusRiwayat() async {
+    final ya = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text('Hapus riwayat?'),
+        content: const Text('Semua percakapan Tanya AI akan dihapus.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Batal')),
+          FilledButton(onPressed: () => Navigator.pop(c, true), child: const Text('Hapus')),
+        ],
+      ),
+    );
+    if (ya != true) return;
+    try {
+      await Api.hapusRiwayatAi(Sesi.pedagangId!, 'TANYA');
+      if (mounted) setState(_pesan.clear);
+    } catch (e) {
+      if (mounted) tampilPesan(context, pesanGalat(e));
+    }
+  }
 
   @override
   void dispose() {
@@ -79,6 +127,14 @@ class _LayarTanyaAiState extends State<LayarTanyaAi> {
             SizedBox(width: 8),
             Text('Tanya AI'),
           ]),
+          actions: [
+            if (_pesan.isNotEmpty && !_menunggu)
+              IconButton(
+                tooltip: 'Hapus riwayat',
+                onPressed: _hapusRiwayat,
+                icon: const Icon(Icons.delete_sweep_outlined),
+              ),
+          ],
         ),
         body: Center(
           child: ConstrainedBox(
@@ -89,7 +145,13 @@ class _LayarTanyaAiState extends State<LayarTanyaAi> {
                   controller: _gulir,
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                   children: [
-                    if (_pesan.isEmpty) _sambutan(),
+                    if (_memuat)
+                      const Padding(
+                        padding: EdgeInsets.only(top: 40),
+                        child: Center(child: CircularProgressIndicator(strokeWidth: 2.5)),
+                      )
+                    else if (_pesan.isEmpty)
+                      _sambutan(),
                     for (final p in _pesan) _Gelembung(p),
                     if (_menunggu) const _Mengetik(),
                   ],

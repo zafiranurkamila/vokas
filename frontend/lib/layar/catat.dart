@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:cross_file/cross_file.dart';
@@ -43,6 +44,33 @@ class _LembarCatatState extends State<LembarCatat> with SingleTickerProviderStat
   final List<double> _level = List.filled(_jumlahBatang, 0.08, growable: true);
   Map<String, dynamic>? _hasil;
   bool _adaYangTersimpan = false;
+  List<Map<String, dynamic>> _riwayat = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _muatRiwayat();
+  }
+
+  /// Catatan suara/teks sebelumnya disimpan di server; tampilkan 5 terakhir.
+  Future<void> _muatRiwayat() async {
+    try {
+      final r = (await Api.riwayatAi(Sesi.pedagangId!, 'CATAT')).cast<Map<String, dynamic>>();
+      if (mounted) setState(() => _riwayat = r.reversed.take(5).toList());
+    } catch (_) {}
+  }
+
+  void _bukaRiwayat(Map<String, dynamic> e) {
+    try {
+      final h = jsonDecode(e['jawaban'] as String) as Map<String, dynamic>;
+      setState(() {
+        _hasil = h;
+        _status = _Status.selesai;
+      });
+    } catch (_) {
+      _pesan('Detail catatan ini tidak bisa dibuka.');
+    }
+  }
 
   @override
   void dispose() {
@@ -123,6 +151,7 @@ class _LembarCatatState extends State<LembarCatat> with SingleTickerProviderStat
       _hasil = h;
       _status = _Status.selesai;
     });
+    _muatRiwayat();
   }
 
   void _pesan(String s) {
@@ -183,6 +212,12 @@ class _LembarCatatState extends State<LembarCatat> with SingleTickerProviderStat
                     ),
                 ]),
                 const SizedBox(height: 16),
+              ],
+              if (_riwayat.isNotEmpty && _hasil == null) ...[
+                const Text('Catatan terakhir:', style: TextStyle(fontSize: 12.5, color: Warna.redup)),
+                const SizedBox(height: 6),
+                for (final e in _riwayat) _BarisRiwayat(e, onTap: () => _bukaRiwayat(e)),
+                const SizedBox(height: 14),
               ],
               Row(children: [
                 Expanded(
@@ -420,4 +455,38 @@ class _GarisStruk extends StatelessWidget {
           ),
         ),
       );
+}
+
+/// Satu baris riwayat catatan: ikon mic/ketik, kalimat aslinya, dan jamnya. Ketuk untuk melihat struknya lagi.
+class _BarisRiwayat extends StatelessWidget {
+  const _BarisRiwayat(this.e, {required this.onTap});
+  final Map<String, dynamic> e;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final suara = e['sumber'] == 'SUARA';
+    final waktu = DateTime.tryParse('${e['dibuat']}')?.toLocal();
+    final jam = waktu == null
+        ? ''
+        : '${waktu.day}/${waktu.month} ${waktu.hour.toString().padLeft(2, '0')}:${waktu.minute.toString().padLeft(2, '0')}';
+    final gagal = e['galat'] != null;
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 4),
+        child: Row(children: [
+          Icon(suara ? Icons.mic_rounded : Icons.edit_note_rounded, size: 18, color: gagal ? Warna.merah : Warna.olive),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text('${e['masukan'] ?? '(tanpa teks)'}',
+                maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13.5)),
+          ),
+          const SizedBox(width: 8),
+          Text(jam, style: const TextStyle(fontSize: 11.5, color: Warna.redup)),
+        ]),
+      ),
+    );
+  }
 }

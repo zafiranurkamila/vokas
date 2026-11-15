@@ -18,8 +18,11 @@ public class AiController {
     private final PembacaGemini gemini;
     private final VokasProperties props;
     private final id.vokas.service.TanyaService tanyaService;
+    private final id.vokas.service.RiwayatService riwayat;
 
-    public AiController(PembacaGemini gemini, VokasProperties props, id.vokas.service.TanyaService tanyaService) {
+    public AiController(PembacaGemini gemini, VokasProperties props, id.vokas.service.TanyaService tanyaService,
+                        id.vokas.service.RiwayatService riwayat) {
+        this.riwayat = riwayat;
         this.gemini = gemini;
         this.props = props;
         this.tanyaService = tanyaService;
@@ -32,7 +35,9 @@ public class AiController {
     @org.springframework.web.bind.annotation.PostMapping("/pedagang/{id}/tanya")
     public PembacaGemini.Jawaban tanya(@org.springframework.web.bind.annotation.PathVariable java.util.UUID id,
                                        @jakarta.validation.Valid @org.springframework.web.bind.annotation.RequestBody Pertanyaan p) {
-        return tanyaService.tanya(id, p.pertanyaan());
+        PembacaGemini.Jawaban j = tanyaService.tanya(id, p.pertanyaan());
+        riwayat.simpanTanya(id, p.pertanyaan(), j);
+        return j;
     }
 
     @GetMapping("/cek")
