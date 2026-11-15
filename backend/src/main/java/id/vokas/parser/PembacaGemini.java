@@ -92,6 +92,17 @@ public class PembacaGemini implements PembacaCatatan {
         } catch (HttpClientErrorException.TooManyRequests e) {
             log.warn("Kuota Gemini habis: {}", e.getStatusText());
             return HasilBaca.gagal(nama(), "Kuota AI gratis sedang penuh, coba lagi sebentar");
+        } catch (HttpClientErrorException e) {
+            // 400 = permintaan/format audio ditolak, 401/403 = API key salah, 404 = nama model tidak ada
+            String isi = e.getResponseBodyAsString();
+            log.warn("Gemini menolak ({}): {}", e.getStatusCode().value(), isi);
+            String sebab = switch (e.getStatusCode().value()) {
+                case 400 -> "AI menolak permintaan (400). Cek API key dan format audio.";
+                case 401, 403 -> "API key Gemini salah atau belum aktif (" + e.getStatusCode().value() + ").";
+                case 404 -> "Model AI '" + cfg.model() + "' tidak ditemukan (404). Ganti GEMINI_MODEL.";
+                default -> "AI menolak permintaan (" + e.getStatusCode().value() + ").";
+            };
+            return HasilBaca.gagal(nama(), sebab);
         } catch (RestClientException | java.io.IOException e) {
             log.warn("Panggilan Gemini gagal: {}", e.getMessage());
             return HasilBaca.gagal(nama(), "AI sedang tidak bisa dihubungi");

@@ -31,7 +31,7 @@ import java.util.UUID;
 @RequestMapping("/api")
 public class TransaksiController {
 
-    private static final long MAKS_AUDIO = 5L * 1024 * 1024;
+    private static final long MAKS_AUDIO = 12L * 1024 * 1024;
 
     private final TransaksiService transaksi;
     private final LaporanService laporan;
@@ -65,7 +65,7 @@ public class TransaksiController {
     @PostMapping(value = "/pedagang/{id}/catat-suara", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public TransaksiService.HasilCatat catatSuara(@PathVariable UUID id, @RequestParam("audio") MultipartFile audio) throws IOException {
         if (audio.isEmpty() || audio.getSize() > MAKS_AUDIO)
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Audio kosong atau lebih dari 5 MB");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Audio kosong atau lebih dari 12 MB");
         return transaksi.catatSuara(id, audio.getBytes(), audio.getContentType());
     }
 
