@@ -13,6 +13,12 @@ class Sesi {
   static bool get sudahIntro => _p.getBool('sudahIntro') ?? false;
   static Future<void> selesaiIntro() => _p.setBool('sudahIntro', true);
 
+  static bool get sudahIzin => _p.getBool('sudahIzin') ?? false;
+  static Future<void> selesaiIzin() => _p.setBool('sudahIzin', true);
+
+  static String get lokasiUsaha => _p.getString('lokasi_${pedagangId ?? '-'}') ?? '';
+  static Future<void> simpanLokasi(String s) => _p.setString('lokasi_${pedagangId ?? '-'}', s);
+
   static bool get sudahTur => _p.getBool('sudahTur') ?? false;
   static Future<void> selesaiTur() => _p.setBool('sudahTur', true);
 

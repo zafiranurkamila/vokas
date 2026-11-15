@@ -7,6 +7,8 @@ import '../sesi.dart';
 import '../tema.dart';
 import 'beranda.dart';
 import 'sambung_bri.dart';
+import '../izin.dart';
+import '../widget/verifikasi_pin.dart';
 
 class TabProfil extends StatefulWidget {
   const TabProfil({super.key, required this.onDataBerubah});
@@ -49,7 +51,7 @@ class _TabProfilState extends State<TabProfil> {
   Future<void> _putuskan() async {
     final ya = await _konfirmasi('Putuskan rekening BRI?',
         'QRIS dan transfer tidak akan tercatat otomatis lagi. Catatan yang sudah ada tetap tersimpan.', 'Putuskan');
-    if (ya) {
+    if (ya && mounted && await verifikasiPin(context, 'Konfirmasi untuk memutus rekening BRI')) {
       await Sesi.putuskanBri();
       setState(() {});
     }
@@ -58,7 +60,8 @@ class _TabProfilState extends State<TabProfil> {
   Future<void> _dataContoh(bool isi) async {
     if (!isi) {
       final ya = await _konfirmasi('Hapus data contoh?', 'Hanya data contoh yang dihapus. Catatanmu sendiri tetap aman.', 'Hapus');
-      if (!ya) return;
+      if (!ya || !mounted) return;
+      if (!await verifikasiPin(context, 'Konfirmasi untuk menghapus data contoh')) return;
     }
     setState(() => _sibuk = true);
     try {
@@ -79,7 +82,8 @@ class _TabProfilState extends State<TabProfil> {
 
   Future<void> _keluar() async {
     final ya = await _konfirmasi('Keluar dari VoKas?', 'Datamu tetap tersimpan. Masuk lagi dengan nomor WhatsApp dan PIN.', 'Keluar');
-    if (!ya) return;
+    if (!ya || !mounted) return;
+    if (!await verifikasiPin(context, 'Konfirmasi untuk keluar dari akun')) return;
     await Sesi.keluar();
     if (mounted) lanjut(context);
   }
@@ -209,7 +213,18 @@ class _TabProfilState extends State<TabProfil> {
       Kartu(
         padding: const EdgeInsets.symmetric(vertical: 4),
         child: Column(children: [
-          const _Baris(Icons.lock_outline_rounded, 'PIN VoKas', 'Aktif, 6 digit'),
+          const _Baris(Icons.lock_outline_rounded, 'PIN VoKas', 'Diminta saat keluar, memutus rekening, dan menghapus data'),
+          const Divider(height: 1, color: Warna.garis, indent: 56),
+          _Baris(Icons.location_on_outlined, 'Lokasi usaha',
+              Sesi.lokasiUsaha.isEmpty ? 'Belum diisi, ketuk untuk mengambil' : Sesi.lokasiUsaha,
+              onTap: () async {
+                final ok = await Izin.mintaLokasi();
+                if (!mounted) return;
+                _pesan(ok ? 'Lokasi usaha tersimpan.' : 'Izin lokasi ditolak. Bisa diubah di pengaturan HP.');
+                setState(() {});
+              }),
+          const Divider(height: 1, color: Warna.garis, indent: 56),
+          _Baris(Icons.tune_rounded, 'Izin aplikasi', 'Mikrofon, notifikasi, lokasi', onTap: Izin.bukaPengaturan),
           const Divider(height: 1, color: Warna.garis, indent: 56),
           _Baris(Icons.shield_outlined, 'Yang disiapkan untuk versi resmi', 'Lihat rinciannya', onTap: () => _versiResmi(context)),
         ]),

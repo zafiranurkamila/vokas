@@ -4,7 +4,9 @@ import 'api.dart';
 import 'layar/beranda.dart';
 import 'layar/notifikasi.dart';
 import 'notif.dart';
+import 'izin.dart';
 import 'layar/intro.dart';
+import 'layar/izin_aplikasi.dart';
 import 'layar/masuk.dart';
 import 'layar/sambung_bri.dart';
 import 'layar/splash.dart';
@@ -15,13 +17,37 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Sesi.muat();
   Api.bangunkan(); // tidak ditunggu: server mulai menyala selama splash dan intro tampil
+  await Izin.siapkan();
+  Izin.onNotifDitekan = () => PusatNotif.i.bukaDaftar?.call();
   PusatNotif.i.bukaDaftar = () =>
       kunciNavigator.currentState?.push(MaterialPageRoute(builder: (_) => const LayarNotifikasi()));
   runApp(const VokasApp());
 }
 
-class VokasApp extends StatelessWidget {
+class VokasApp extends StatefulWidget {
   const VokasApp({super.key});
+
+  @override
+  State<VokasApp> createState() => _VokasAppState();
+}
+
+class _VokasAppState extends State<VokasApp> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    PusatNotif.i.diDepan = state == AppLifecycleState.resumed;
+  }
 
   @override
   Widget build(BuildContext context) => MaterialApp(
@@ -38,6 +64,7 @@ Widget layarBerikutnya() {
   if (!Sesi.sudahIntro) return const LayarIntro();
   if (Sesi.pedagangId == null) return const LayarMasuk();
   if (!Sesi.sudahPilihBri) return const LayarSambungBri();
+  if (!Sesi.sudahIzin) return const LayarIzin();
   return const Beranda();
 }
 

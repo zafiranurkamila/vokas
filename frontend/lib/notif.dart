@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'api.dart';
+import 'izin.dart';
 import 'sesi.dart';
 import 'tema.dart';
 
@@ -50,6 +51,9 @@ class PusatNotif extends ChangeNotifier {
   OverlayEntry? _banner;
   Timer? _tutupBanner;
 
+  /// false saat aplikasi di latar belakang: notifikasi dikirim ke panel HP.
+  bool diDepan = true;
+
   /// Dipanggil setelah ada transaksi baru supaya beranda memuat ulang.
   VoidCallback? onTransaksiBaru;
 
@@ -77,8 +81,12 @@ class PusatNotif extends ChangeNotifier {
     if (daftar.length > _maks) daftar.removeRange(_maks, daftar.length);
     notifyListeners();
     await _simpan();
-    _bunyi();
-    _tampilkanBanner(n);
+    if (diDepan) {
+      _bunyi();
+      _tampilkanBanner(n);
+    } else {
+      await Izin.tampilkan(judul, isi); // bunyi dan tampilan dari sistem Android
+    }
   }
 
   Future<void> tandaiSemuaDibaca() async {

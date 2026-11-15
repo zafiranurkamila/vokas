@@ -118,3 +118,14 @@ Railway tetap bisa dipakai (ada `railway.json`); isi Root Directory dengan `back
 - `X-Api-Key` hanya untuk pilot tertutup. Sebelum dibuka publik, ganti dengan Supabase Auth (JWT per pedagang).
 - Data yang dikirim ke Gemini free tier dapat dipakai Google untuk perbaikan produk. Cantumkan di kebijakan
   privasi, atau pindah ke paket berbayar sebelum memproses data pedagang sungguhan dalam jumlah besar.
+
+## Akun demo
+
+| | |
+|---|---|
+| Nomor WhatsApp | `0812 0000 0001` |
+| Kode OTP (mode demo) | `123456` |
+| PIN | dibuat sendiri saat pertama masuk di perangkat itu |
+
+Akun dibuat otomatis oleh migrasi `V2__akun_demo.sql`. Setelah masuk, buka **Profil > Isi data contoh 90 hari**
+supaya Laporan dan Rapor KUR terisi.
