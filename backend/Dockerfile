@@ -16,6 +16,6 @@ USER vokas
 # - TieredStopAtLevel=1: JIT ringan, start jauh lebih cepat di CPU kecil
 # - SerialGC + MaxRAMPercentage: hemat memori
 # - Xss512k + CICompilerCount: kurangi beban thread
-ENV JAVA_OPTS="-XX:MaxRAMPercentage=75 -XX:+UseSerialGC -XX:TieredStopAtLevel=1 -XX:CICompilerCount=1 -Xss512k -Dspring.jmx.enabled=false"
+ENV JAVA_OPTS="-XX:MaxRAMPercentage=75 -XX:+UseSerialGC -XX:TieredStopAtLevel=1 -XX:CICompilerCount=1 -Xss512k -Dspring.jmx.enabled=false -Djava.net.preferIPv4Stack=true"
 EXPOSE 8080
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]

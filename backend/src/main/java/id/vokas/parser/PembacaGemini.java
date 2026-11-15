@@ -49,7 +49,7 @@ public class PembacaGemini implements PembacaCatatan {
         this.json = json;
         SimpleClientHttpRequestFactory f = new SimpleClientHttpRequestFactory();
         f.setConnectTimeout(10_000);
-        f.setReadTimeout(40_000);
+        f.setReadTimeout(45_000);
         this.http = RestClient.builder().requestFactory(f).baseUrl(BASE).build();
     }
 
@@ -73,23 +73,20 @@ public class PembacaGemini implements PembacaCatatan {
 
     private HasilBaca panggil(List<Map<String, Object>> parts) {
         if (!aktif()) return HasilBaca.gagal(nama(), "GEMINI_API_KEY belum diisi");
-        Map<String, Object> body = Map.of(
-                "systemInstruction", Map.of("parts", List.of(Map.of("text", INSTRUKSI))),
-                "contents", List.of(Map.of("role", "user", "parts", parts)),
-                "generationConfig", Map.of(
-                        "temperature", 0,
-                        "responseMimeType", "application/json",
-                        "responseSchema", skema()));
         // Free tier sering "overloaded" (503), lambat, atau modelnya sudah pensiun (404).
         // Urutan: model utama 2x, lalu tiap model cadangan sekali. Model 404 dilewati tanpa jeda.
+        // Bila model utama timeout, percobaan kedua model yang sama dilewati: langsung ke model yang lebih ringan.
         List<String> urutan = urutanModel();
         HasilBaca terakhir = HasilBaca.gagal(nama(), "AI sedang tidak bisa dihubungi");
         boolean perluJeda = false;
+        String timeoutDi = null;
         long mulai = System.currentTimeMillis();
         for (String model : urutan) {
-            if (System.currentTimeMillis() - mulai > 75_000) break;   // jangan biarkan pengguna menunggu terlalu lama
+            if (System.currentTimeMillis() - mulai > 100_000) break;   // jangan biarkan pengguna menunggu terlalu lama
+            if (model.equals(timeoutDi)) continue;
             if (perluJeda) jeda(1200);
-            HasilBaca h = panggilSekali(model, body);
+            HasilBaca h = panggilSekali(model, isiPermintaan(model, parts));
+            if (h.galat() != null && h.galat().startsWith(LAMBAT)) timeoutDi = model;
             if (h.galat() == null) {
                 if (!model.equals(cfg.model())) log.info("Gemini memakai model cadangan {}", model);
                 return h;
@@ -101,6 +98,25 @@ public class PembacaGemini implements PembacaCatatan {
             terakhir = h;
         }
         return terakhir;
+    }
+
+    private static final String LAMBAT = "AI sedang lambat";
+
+    /**
+     * Mode "thinking" pada Gemini 2.5 menyala bawaan dan bisa menambah puluhan detik. Untuk mengurai catatan
+     * transaksi tidak diperlukan, jadi dimatikan (thinkingBudget 0). Model lain tidak diberi thinkingConfig
+     * karena bisa menolak parameter itu.
+     */
+    private Map<String, Object> isiPermintaan(String model, List<Map<String, Object>> parts) {
+        Map<String, Object> gen = new LinkedHashMap<>();
+        gen.put("temperature", 0);
+        gen.put("responseMimeType", "application/json");
+        gen.put("responseSchema", skema());
+        if (model.startsWith("gemini-2.5")) gen.put("thinkingConfig", Map.of("thinkingBudget", 0));
+        return Map.of(
+                "systemInstruction", Map.of("parts", List.of(Map.of("text", INSTRUKSI))),
+                "contents", List.of(Map.of("role", "user", "parts", parts)),
+                "generationConfig", gen);
     }
 
     List<String> urutanModel() {
