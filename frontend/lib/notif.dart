@@ -147,6 +147,83 @@ class PusatNotif extends ChangeNotifier {
 
   void hentikanSimulasi() => _simulasi?.cancel();
 
+  // ---------------- saat aplikasi ditutup ----------------
+  // Timer di dalam aplikasi berhenti saat aplikasi ditutup. Karena itu, sebelum keluar, beberapa QRIS contoh
+  // dijadwalkan ke sistem Android supaya notifikasinya tetap muncul. Saat aplikasi dibuka lagi, pembayaran yang
+  // waktunya sudah lewat dicatat ke VoKas, sisanya dibatalkan.
+  // Versi resmi: server mengirim push (FCM) saat mutasi BRI benar-benar masuk.
+
+  static const _kunciTertunda = 'qris_tertunda';
+  bool _simulasiAktif = false;
+
+  /// Dipanggil saat aplikasi pindah ke latar belakang atau ditutup.
+  Future<void> keLatar() async {
+    _simulasiAktif = _simulasi?.isActive ?? false;
+    hentikanSimulasi();
+    if (Sesi.briTersambung != true || Sesi.pedagangId == null) return;
+    final p = await SharedPreferences.getInstance();
+    if (p.getString(_kunciTertunda) != null) return; // sudah terjadwal
+    final r = Random();
+    var waktu = DateTime.now();
+    final jadwal = <Map<String, dynamic>>[];
+    for (var k = 0; k < 8; k++) {
+      waktu = waktu.add(Duration(seconds: (k == 0 ? 60 : 180) + r.nextInt(180)));
+      final nominal = (3 + r.nextInt(10)) * 2500;
+      final id = 1000 + k;
+      jadwal.add({'id': id, 'waktu': waktu.toIso8601String(), 'nominal': nominal});
+      await Izin.jadwalkan(id, 'QRIS masuk ${rp(nominal)}', 'Pembayaran dari pembeli. Otomatis tercatat di VoKas.', waktu);
+    }
+    await p.setString(_kunciTertunda, jsonEncode(jadwal));
+  }
+
+  /// Dipanggil saat aplikasi dibuka lagi: catat QRIS yang sudah lewat waktunya, batalkan sisanya.
+  Future<void> keDepan() async {
+    await prosesTertunda();
+    if (_simulasiAktif) mulaiSimulasi();
+  }
+
+  Future<void> prosesTertunda() async {
+    final p = await SharedPreferences.getInstance();
+    final s = p.getString(_kunciTertunda);
+    if (s == null) return;
+    await p.remove(_kunciTertunda);
+    final sekarang = DateTime.now();
+    final lewat = <Map<String, dynamic>>[];
+    for (final j in (jsonDecode(s) as List).cast<Map<String, dynamic>>()) {
+      final w = DateTime.parse(j['waktu'] as String);
+      if (w.isAfter(sekarang)) {
+        await Izin.batal(j['id'] as int);
+      } else {
+        lewat.add({...j, 'w': w});
+      }
+    }
+    final id = Sesi.pedagangId;
+    if (lewat.isEmpty || id == null) return;
+    try {
+      await Api.imporMutasi(id, [
+        for (final j in lewat)
+          {'ref': 'DEMO-${(j['w'] as DateTime).millisecondsSinceEpoch}', 'nominal': j['nominal'], 'metode': 'QRIS', 'keterangan': 'Pembayaran QRIS'},
+      ]);
+      for (final j in lewat) {
+        daftar.insert(0, Notif(
+          id: '${(j['w'] as DateTime).microsecondsSinceEpoch}',
+          judul: 'QRIS masuk ${rp(j['nominal'] as num)}',
+          isi: 'Pembayaran dari pembeli sudah tercatat otomatis sebagai penjualan.',
+          waktu: j['w'] as DateTime,
+        ));
+      }
+      if (daftar.length > _maks) daftar.removeRange(_maks, daftar.length);
+      notifyListeners();
+      await _simpan();
+      onTransaksiBaru?.call();
+    } catch (_) {
+      // gagal tersambung: kembalikan supaya dicoba lagi saat aplikasi dibuka berikutnya
+      await p.setString(_kunciTertunda, jsonEncode([
+        for (final j in lewat) {'id': j['id'], 'waktu': (j['w'] as DateTime).toIso8601String(), 'nominal': j['nominal']},
+      ]));
+    }
+  }
+
   // ---------------- banner ----------------
 
   void _tampilkanBanner(Notif n) {

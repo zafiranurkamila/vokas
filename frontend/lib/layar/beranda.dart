@@ -40,7 +40,8 @@ class _BerandaState extends State<Beranda> {
   void initState() {
     super.initState();
     final n = PusatNotif.i;
-    n.muat();
+    // QRIS yang masuk selama aplikasi ditutup dicatat setelah riwayat notifikasi dimuat
+    n.muat().then((_) => n.prosesTertunda());
     n.onTransaksiBaru = () {
       if (mounted) setState(() => _versi++);
     };

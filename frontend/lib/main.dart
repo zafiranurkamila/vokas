@@ -48,6 +48,8 @@ class _VokasAppState extends State<VokasApp> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     PusatNotif.i.diDepan = state == AppLifecycleState.resumed;
+    if (state == AppLifecycleState.paused) PusatNotif.i.keLatar();
+    if (state == AppLifecycleState.resumed) PusatNotif.i.keDepan();
   }
 
   @override
