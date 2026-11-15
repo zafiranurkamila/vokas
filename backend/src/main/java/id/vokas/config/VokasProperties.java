@@ -3,7 +3,17 @@ package id.vokas.config;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(prefix = "vokas")
-public record VokasProperties(String apiKey, String corsOrigins, String zonaWaktu, Gemini gemini, Wa wa, Twilio twilio) {
+public record VokasProperties(String apiKey, String corsOrigins, String zonaWaktu, Gemini gemini, Wa wa, Twilio twilio, Bri bri) {
+
+    /** Kredensial BRIAPI (SNAP BI) dari portal developers.bri.co.id. privateKey: PEM PKCS#8, boleh dengan \n. */
+    public record Bri(String baseUrl, String clientId, String clientSecret, String privateKey, String partnerId, String channelId,
+                      String pathMutasi) {
+        public boolean aktif() {
+            return clientId != null && !clientId.isBlank() && clientSecret != null && !clientSecret.isBlank()
+                    && privateKey != null && !privateKey.isBlank() && partnerId != null && !partnerId.isBlank()
+                    && channelId != null && !channelId.isBlank();
+        }
+    }
 
     /**
      * Twilio WhatsApp (sandbox atau nomor resmi lewat Twilio).

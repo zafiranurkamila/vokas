@@ -48,6 +48,50 @@ class _TabProfilState extends State<TabProfil> {
     if (ok == true) setState(() {});
   }
 
+  Future<void> _sinkronBri() async {
+    final ctrl = TextEditingController();
+    final noRek = await showDialog<String>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text('Ambil mutasi dari BRI'),
+        content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('Masukkan nomor rekening lengkap. Nomor ini hanya dipakai untuk permintaan ini dan tidak disimpan.',
+              style: TextStyle(fontSize: 13, color: Warna.redup, height: 1.45)),
+          const SizedBox(height: 12),
+          TextField(
+            controller: ctrl,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(labelText: 'Nomor rekening BRI (sandbox)'),
+          ),
+          const SizedBox(height: 8),
+          const Text('Mode sandbox: pakai nomor rekening uji dari dokumentasi BRIAPI.',
+              style: TextStyle(fontSize: 11.5, color: Warna.redup)),
+        ]),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(c), child: const Text('Batal')),
+          FilledButton(
+            onPressed: () => Navigator.pop(c, ctrl.text.replaceAll(RegExp(r'\D'), '')),
+            style: FilledButton.styleFrom(minimumSize: const Size(90, 40)),
+            child: const Text('Ambil'),
+          ),
+        ],
+      ),
+    );
+    if (noRek == null || noRek.isEmpty) return;
+    setState(() => _sibuk = true);
+    try {
+      final h = await Api.sinkronBri(Sesi.pedagangId!, noRek);
+      final impor = (h['impor'] as Map?) ?? {};
+      _pesan('BRI: ${h['ditemukan']} mutasi ditemukan, ${impor['baru'] ?? 0} baru dicatat, '
+          '${impor['perluCek'] ?? 0} transfer perlu dicek.');
+      widget.onDataBerubah();
+    } catch (e) {
+      _pesan(pesanGalat(e));
+    } finally {
+      if (mounted) setState(() => _sibuk = false);
+    }
+  }
+
   Future<void> _putuskan() async {
     final ya = await _konfirmasi('Putuskan rekening BRI?',
         'QRIS dan transfer tidak akan tercatat otomatis lagi. Catatan yang sudah ada tetap tersimpan.', 'Putuskan');
@@ -158,6 +202,15 @@ class _TabProfilState extends State<TabProfil> {
               ),
           ]),
           const SizedBox(height: 12),
+          if (bri) ...[
+            FilledButton.icon(
+              onPressed: _sibuk ? null : _sinkronBri,
+              icon: const Icon(Icons.sync_rounded, size: 18),
+              label: const Text('Ambil mutasi dari BRI (sandbox)'),
+              style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(42), backgroundColor: Warna.qris),
+            ),
+            const SizedBox(height: 8),
+          ],
           if (bri)
             OutlinedButton(
               onPressed: _putuskan,

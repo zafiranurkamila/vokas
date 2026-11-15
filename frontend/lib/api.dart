@@ -54,6 +54,12 @@ class Api {
   static Future<Map<String, dynamic>> imporMutasi(String id, List<Map<String, dynamic>> mutasi) async =>
       _hasil(await http.post(_u('/api/pedagang/$id/mutasi/impor'), headers: _header, body: jsonEncode(mutasi)));
 
+  /// Ambil mutasi rekening dari BRIAPI (sandbox) lalu catat ke VoKas.
+  static Future<Map<String, dynamic>> sinkronBri(String id, String noRek, {int hari = 7}) async => _hasil(await http
+      .post(_u('/api/bri/pedagang/$id/sinkron-mutasi'),
+          headers: _header, body: jsonEncode({'accountNo': noRek, 'hari': hari}))
+      .timeout(const Duration(seconds: 60)));
+
   /// Tanya AI tentang usaha sendiri. Hasil: {teks, galat}
   static Future<Map<String, dynamic>> tanyaAi(String id, String pertanyaan) async => _hasil(await http
       .post(_u('/api/ai/pedagang/$id/tanya'), headers: _header, body: jsonEncode({'pertanyaan': pertanyaan}))
