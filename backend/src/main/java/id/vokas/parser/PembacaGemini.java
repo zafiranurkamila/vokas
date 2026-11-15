@@ -71,6 +71,50 @@ public class PembacaGemini implements PembacaCatatan {
                 Map.of("text", "Ini voice note catatan pedagang. Dengarkan lalu uraikan.")));
     }
 
+    public record Jawaban(String teks, String galat) {}
+
+    /**
+     * Jawaban teks bebas (untuk fitur Tanya AI). Memakai urutan model yang sama dengan pembaca catatan.
+     * @param instruksi peran dan aturan asisten, termasuk data usaha sebagai konteks
+     */
+    public Jawaban jawab(String instruksi, String pertanyaan) {
+        if (!aktif()) return new Jawaban(null, "GEMINI_API_KEY belum diisi");
+        String galat = "AI sedang tidak bisa dihubungi";
+        long mulai = System.currentTimeMillis();
+        for (String model : urutanModel().stream().distinct().toList()) {
+            if (System.currentTimeMillis() - mulai > 60_000) break;
+            Map<String, Object> gen = new LinkedHashMap<>();
+            gen.put("temperature", 0.4);
+            gen.put("maxOutputTokens", 500);
+            if (model.startsWith("gemini-2.5")) gen.put("thinkingConfig", Map.of("thinkingBudget", 0));
+            Map<String, Object> body = Map.of(
+                    "systemInstruction", Map.of("parts", List.of(Map.of("text", instruksi))),
+                    "contents", List.of(Map.of("role", "user", "parts", List.of(Map.of("text", pertanyaan)))),
+                    "generationConfig", gen);
+            try {
+                JsonNode res = http.post().uri(model + ":generateContent")
+                        .header("x-goog-api-key", cfg.apiKey())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body(body).retrieve().body(JsonNode.class);
+                StringBuilder sb = new StringBuilder();
+                if (res != null) for (JsonNode p : res.at("/candidates/0/content/parts")) sb.append(p.path("text").asText(""));
+                if (!sb.isEmpty()) return new Jawaban(sb.toString().trim(), null);
+                galat = "AI tidak memberi jawaban, coba tanya dengan kalimat lain";
+            } catch (HttpClientErrorException.TooManyRequests e) {
+                return new Jawaban(null, "Kuota AI gratis sedang penuh, coba lagi sebentar");
+            } catch (HttpClientErrorException e) {
+                int s = e.getStatusCode().value();
+                log.warn("Tanya AI ({}) ditolak {}: {}", model, s, e.getResponseBodyAsString());
+                if (s == 401 || s == 403) return new Jawaban(null, "API key Gemini salah atau belum aktif");
+                galat = "AI menolak permintaan (" + s + ")";
+            } catch (RestClientException e) {
+                log.warn("Tanya AI ({}) gagal: {}", model, e.toString());
+                galat = "AI sedang sibuk atau lambat, coba lagi sebentar";
+            }
+        }
+        return new Jawaban(null, galat);
+    }
+
     private HasilBaca panggil(List<Map<String, Object>> parts) {
         if (!aktif()) return HasilBaca.gagal(nama(), "GEMINI_API_KEY belum diisi");
         // Free tier sering "overloaded" (503), lambat, atau modelnya sudah pensiun (404).

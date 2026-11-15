@@ -54,6 +54,11 @@ class Api {
   static Future<Map<String, dynamic>> imporMutasi(String id, List<Map<String, dynamic>> mutasi) async =>
       _hasil(await http.post(_u('/api/pedagang/$id/mutasi/impor'), headers: _header, body: jsonEncode(mutasi)));
 
+  /// Tanya AI tentang usaha sendiri. Hasil: {teks, galat}
+  static Future<Map<String, dynamic>> tanyaAi(String id, String pertanyaan) async => _hasil(await http
+      .post(_u('/api/ai/pedagang/$id/tanya'), headers: _header, body: jsonEncode({'pertanyaan': pertanyaan}))
+      .timeout(const Duration(seconds: 90)));
+
   static Future<Map<String, dynamic>> catatTeks(String id, String teks) async =>
       _hasil(await http.post(_u('/api/pedagang/$id/catat'), headers: _header, body: jsonEncode({'teks': teks})));
 

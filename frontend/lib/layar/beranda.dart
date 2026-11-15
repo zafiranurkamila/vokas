@@ -7,6 +7,9 @@ import '../sesi.dart';
 import '../tema.dart';
 import '../widget/tur.dart';
 import 'catat.dart';
+import 'hitung_kur.dart';
+import 'tanya_ai.dart';
+import 'terima_qris.dart';
 import 'laporan.dart';
 import 'profil.dart';
 import 'rapor_kur.dart';
@@ -192,6 +195,46 @@ class _TabBerandaState extends State<TabBeranda> {
     return (r[0] as Map<String, dynamic>, r[1] as List<dynamic>, r[2] as Map<String, dynamic>);
   }
 
+  Future<void> _buka(Widget layar) async {
+    await Navigator.of(context).push(MaterialPageRoute(builder: (_) => layar));
+    if (mounted) setState(() => _data = _muat());
+  }
+
+  Future<void> _aturTarget() async {
+    final ctrl = TextEditingController(text: Sesi.targetHarian > 0 ? '${Sesi.targetHarian}' : '');
+    final hasil = await showDialog<int>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text('Target omzet harian'),
+        content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('Berapa omzet yang ingin dicapai setiap hari?', style: TextStyle(color: Warna.redup, fontSize: 13)),
+          const SizedBox(height: 12),
+          TextField(
+            controller: ctrl,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(prefixText: 'Rp ', hintText: '300000'),
+          ),
+          const SizedBox(height: 10),
+          Wrap(spacing: 6, children: [
+            for (final n in [200000, 300000, 500000])
+              ActionChip(label: Text(rp(n)), onPressed: () => ctrl.text = '$n'),
+          ]),
+        ]),
+        actions: [
+          if (Sesi.targetHarian > 0) TextButton(onPressed: () => Navigator.pop(c, 0), child: const Text('Hapus target')),
+          FilledButton(
+            onPressed: () => Navigator.pop(c, int.tryParse(ctrl.text.replaceAll(RegExp(r'\D'), '')) ?? 0),
+            style: FilledButton.styleFrom(minimumSize: const Size(90, 40)),
+            child: const Text('Simpan'),
+          ),
+        ],
+      ),
+    );
+    if (hasil == null) return;
+    await Sesi.simpanTarget(hasil);
+    if (mounted) setState(() {});
+  }
+
   Future<void> _hapus(Map<String, dynamic> t) async {
     try {
       await Api.hapusTransaksi(Sesi.pedagangId!, t['id']);
@@ -231,11 +274,11 @@ class _TabBerandaState extends State<TabBeranda> {
             return ListView(padding: paddingTab, children: [
               kepala,
               const SizedBox(height: 20),
-              _KartuUntung(lap, aksi: [
-                _Aksi(Icons.mic_rounded, 'Catat', widget.onCatat),
-                _Aksi(Icons.bar_chart_rounded, 'Laporan', () => widget.keTab(1)),
-                _Aksi(Icons.verified_outlined, 'Rapor KUR', () => widget.keTab(2)),
-                _Aksi(Icons.account_balance_outlined, 'Rekening', () => widget.keTab(3)),
+              _KartuUntung(lap, target: Sesi.targetHarian, aksi: [
+                _Aksi(Icons.auto_awesome_rounded, 'Tanya AI', () => _buka(const LayarTanyaAi())),
+                _Aksi(Icons.qr_code_2_rounded, 'Terima QRIS', () => _buka(const LayarTerimaQris())),
+                _Aksi(Icons.calculate_outlined, 'Hitung KUR', () => _buka(const LayarHitungKur())),
+                _Aksi(Icons.flag_outlined, 'Target', _aturTarget),
               ]),
               const SizedBox(height: 16),
               _BannerKur(kur, () => widget.keTab(2)),
@@ -324,9 +367,10 @@ class _Aksi {
 }
 
 class _KartuUntung extends StatelessWidget {
-  const _KartuUntung(this.lap, {required this.aksi});
+  const _KartuUntung(this.lap, {required this.aksi, this.target = 0});
   final Map<String, dynamic> lap;
   final List<_Aksi> aksi;
+  final int target;
 
   @override
   Widget build(BuildContext context) {
@@ -351,6 +395,29 @@ class _KartuUntung extends StatelessWidget {
               _Angka('Keluar', rp(keluar), Icons.arrow_upward_rounded),
               _Angka('Lewat QRIS', rp(qris), Icons.qr_code_2_rounded),
             ]),
+            if (target > 0) ...[
+              const SizedBox(height: 14),
+              Row(children: [
+                const Icon(Icons.flag_rounded, size: 14, color: Warna.matahari),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text('Target ${rp(target)}',
+                      style: const TextStyle(color: Warna.khaki, fontSize: 12)),
+                ),
+                Text(omzet >= target ? 'Tercapai!' : '${(100 * omzet / target).floor()}%',
+                    style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+              ]),
+              const SizedBox(height: 6),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: LinearProgressIndicator(
+                  value: (omzet / target).clamp(0, 1).toDouble(),
+                  minHeight: 7,
+                  backgroundColor: Colors.white24,
+                  color: Warna.matahari,
+                ),
+              ),
+            ],
           ]),
         ),
         Padding(

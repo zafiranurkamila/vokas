@@ -17,10 +17,22 @@ public class AiController {
 
     private final PembacaGemini gemini;
     private final VokasProperties props;
+    private final id.vokas.service.TanyaService tanyaService;
 
-    public AiController(PembacaGemini gemini, VokasProperties props) {
+    public AiController(PembacaGemini gemini, VokasProperties props, id.vokas.service.TanyaService tanyaService) {
         this.gemini = gemini;
         this.props = props;
+        this.tanyaService = tanyaService;
+    }
+
+    public record Pertanyaan(@jakarta.validation.constraints.NotBlank
+                             @jakarta.validation.constraints.Size(max = 500) String pertanyaan) {}
+
+    /** Tanya AI tentang usaha sendiri. */
+    @org.springframework.web.bind.annotation.PostMapping("/pedagang/{id}/tanya")
+    public PembacaGemini.Jawaban tanya(@org.springframework.web.bind.annotation.PathVariable java.util.UUID id,
+                                       @jakarta.validation.Valid @org.springframework.web.bind.annotation.RequestBody Pertanyaan p) {
+        return tanyaService.tanya(id, p.pertanyaan());
     }
 
     @GetMapping("/cek")

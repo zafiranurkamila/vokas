@@ -7,6 +7,7 @@ import '../api.dart';
 import '../sesi.dart';
 import '../tema.dart';
 import 'beranda.dart';
+import 'hitung_kur.dart';
 
 class TabRaporKur extends StatefulWidget {
   const TabRaporKur({super.key, required this.onDataBerubah});
@@ -62,6 +63,8 @@ class _TabRaporKurState extends State<TabRaporKur> {
                 tombol: _mengisi ? 'Mengisi...' : 'Isi data contoh 90 hari',
                 onTombol: _mengisi ? null : _isiContoh,
               ),
+              const SizedBox(height: 16),
+              const _ApaItuKur(),
             ]);
           }
           return ListView(padding: paddingTab, children: [
@@ -101,6 +104,8 @@ class _TabRaporKurState extends State<TabRaporKur> {
                 for (final k in kriteria) _BarisKriteria(k),
               ]),
             ),
+            const SizedBox(height: 16),
+            const _ApaItuKur(),
             const SizedBox(height: 12),
             const Text(
               'Rapor ini alat bantu merapikan catatan usaha, bukan keputusan kredit. Persetujuan KUR tetap ditentukan BRI.',
@@ -163,3 +168,57 @@ class _Gauge extends CustomPainter {
   @override
   bool shouldRepaint(_Gauge o) => o.nilai != nilai || o.siap != siap;
 }
+
+/// Penjelasan singkat KUR untuk pedagang (dan juri) yang belum kenal.
+class _ApaItuKur extends StatelessWidget {
+  const _ApaItuKur();
+
+  @override
+  Widget build(BuildContext context) => Kartu(
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(color: Warna.khaki, borderRadius: BorderRadius.circular(10)),
+              child: const Icon(Icons.help_outline_rounded, color: Warna.oliveTua, size: 20),
+            ),
+            const SizedBox(width: 10),
+            Text('Apa itu KUR?', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w700)),
+          ]),
+          const SizedBox(height: 10),
+          const Text(
+            'KUR (Kredit Usaha Rakyat) adalah pinjaman modal usaha dari pemerintah untuk UMKM yang bunganya disubsidi, '
+            'jadi jauh lebih ringan dari pinjaman biasa. KUR disalurkan lewat bank, dan BRI adalah penyalur terbesarnya.',
+            style: TextStyle(height: 1.55, fontSize: 13.5),
+          ),
+          const SizedBox(height: 10),
+          const _Poin('KUR Mikro: pinjaman sampai Rp100 juta, bunga sekitar 6% per tahun'),
+          const _Poin('Bank perlu melihat usahamu berjalan dan mampu mencicil'),
+          const _Poin('Catatan rapi dari VoKas membantu menunjukkan omzet dan laba usahamu'),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LayarHitungKur())),
+            icon: const Icon(Icons.calculate_outlined),
+            label: const Text('Hitung perkiraan cicilan KUR'),
+            style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(44), backgroundColor: Warna.kartu),
+          ),
+        ]),
+      );
+}
+
+class _Poin extends StatelessWidget {
+  const _Poin(this.teks);
+  final String teks;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(bottom: 6),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Padding(padding: EdgeInsets.only(top: 7), child: Icon(Icons.circle, size: 5, color: Warna.olive)),
+          const SizedBox(width: 10),
+          Expanded(child: Text(teks, style: const TextStyle(fontSize: 13, color: Warna.redup, height: 1.45))),
+        ]),
+      );
+}
+

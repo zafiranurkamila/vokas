@@ -107,11 +107,11 @@ class PusatNotif extends ChangeNotifier {
   // ---------------- simulasi QRIS masuk ----------------
 
   /// Kirim satu pembayaran QRIS contoh: dicatat di backend lalu muncul notifikasi.
-  Future<void> kirimQrisContoh() async {
+  Future<void> kirimQrisContoh([int? jumlah]) async {
     final id = Sesi.pedagangId;
     if (id == null) return;
     final r = Random();
-    final nominal = (3 + r.nextInt(10)) * 2500; // Rp7.500 - Rp30.000
+    final nominal = jumlah ?? (3 + r.nextInt(10)) * 2500; // Rp7.500 - Rp30.000
     try {
       await Api.imporMutasi(id, [
         {'ref': 'DEMO-${DateTime.now().millisecondsSinceEpoch}', 'nominal': nominal, 'metode': 'QRIS', 'keterangan': 'Pembayaran QRIS'},

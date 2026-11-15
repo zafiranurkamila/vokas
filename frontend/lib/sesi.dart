@@ -28,6 +28,10 @@ class Sesi {
     await _p.setString('noWa', (p['noWa'] ?? '') as String);
   }
 
+  // ---------- target omzet harian ----------
+  static int get targetHarian => _p.getInt('target_${pedagangId ?? '-'}') ?? 0;
+  static Future<void> simpanTarget(int nilai) => _p.setInt('target_${pedagangId ?? '-'}', nilai);
+
   // ---------- PIN ----------
   static String _hash(String wa, String pin) => sha256.convert(utf8.encode('vokas:$wa:$pin')).toString();
   static bool punyaPin(String wa) => _p.containsKey('pin_$wa');
