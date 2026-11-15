@@ -125,6 +125,13 @@ class Api {
       .post(_u('/api/ai/pedagang/$id/tanya'), headers: _header, body: jsonEncode({'pertanyaan': pertanyaan}))
       .timeout(const Duration(seconds: 90))));
 
+  /// Riwayat tersimpan: jenis 'TANYA' (Tanya AI) atau 'CATAT' (voice note / teks). Urut dari yang paling lama.
+  static Future<List<dynamic>> riwayatAi(String id, String jenis) async =>
+      _hasil(await _coba(() => http.get(_u('/api/pedagang/$id/riwayat-ai', {'jenis': jenis}), headers: _header)));
+
+  static Future<void> hapusRiwayatAi(String id, String jenis) async =>
+      _hasil(await _coba(() => http.delete(_u('/api/pedagang/$id/riwayat-ai', {'jenis': jenis}), headers: _header)));
+
   static Future<Map<String, dynamic>> catatTeks(String id, String teks) async => _hasil(
       await _coba(() => http.post(_u('/api/pedagang/$id/catat'), headers: _header, body: jsonEncode({'teks': teks}))));
 

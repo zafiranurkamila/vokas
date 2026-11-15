@@ -9,6 +9,7 @@ import id.vokas.parser.HasilBaca;
 import id.vokas.parser.PembacaCatatan;
 import id.vokas.service.DataContohService;
 import id.vokas.service.LaporanService;
+import id.vokas.service.RiwayatService;
 import id.vokas.service.SkorKurService;
 import id.vokas.service.TransaksiService;
 import jakarta.validation.Valid;
@@ -38,9 +39,11 @@ public class TransaksiController {
     private final SkorKurService kur;
     private final PembacaCatatan pembaca;
     private final DataContohService dataContoh;
+    private final RiwayatService riwayat;
 
     public TransaksiController(TransaksiService transaksi, LaporanService laporan, SkorKurService kur,
-                               PembacaCatatan pembaca, DataContohService dataContoh) {
+                               PembacaCatatan pembaca, DataContohService dataContoh, RiwayatService riwayat) {
+        this.riwayat = riwayat;
         this.transaksi = transaksi;
         this.laporan = laporan;
         this.kur = kur;
@@ -59,14 +62,31 @@ public class TransaksiController {
     @PostMapping("/pedagang/{id}/catat")
     public TransaksiService.HasilCatat catat(@PathVariable UUID id, @Valid @RequestBody Catatan c,
                                              @RequestParam(defaultValue = "true") boolean simpan) {
-        return transaksi.catatTeks(id, c.teks(), simpan);
+        TransaksiService.HasilCatat h = transaksi.catatTeks(id, c.teks(), simpan);
+        if (simpan) riwayat.simpanCatat(id, "TEKS", c.teks(), h);
+        return h;
     }
 
     @PostMapping(value = "/pedagang/{id}/catat-suara", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public TransaksiService.HasilCatat catatSuara(@PathVariable UUID id, @RequestParam("audio") MultipartFile audio) throws IOException {
         if (audio.isEmpty() || audio.getSize() > MAKS_AUDIO)
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Audio kosong atau lebih dari 12 MB");
-        return transaksi.catatSuara(id, audio.getBytes(), audio.getContentType());
+        TransaksiService.HasilCatat h = transaksi.catatSuara(id, audio.getBytes(), audio.getContentType());
+        riwayat.simpanCatat(id, "SUARA", null, h);
+        return h;
+    }
+
+    /** Riwayat Tanya AI (jenis=TANYA) atau catatan suara/teks (jenis=CATAT), maksimal 50 terakhir. */
+    @GetMapping("/pedagang/{id}/riwayat-ai")
+    public List<id.vokas.model.RiwayatAi> riwayat(@PathVariable UUID id, @RequestParam(defaultValue = "TANYA") String jenis) {
+        transaksi.pedagang(id);
+        return riwayat.daftar(id, jenis.toUpperCase());
+    }
+
+    @DeleteMapping("/pedagang/{id}/riwayat-ai")
+    public Map<String, Integer> hapusRiwayat(@PathVariable UUID id, @RequestParam(defaultValue = "TANYA") String jenis) {
+        transaksi.pedagang(id);
+        return Map.of("terhapus", riwayat.hapus(id, jenis.toUpperCase()));
     }
 
     @GetMapping("/pedagang/{id}/transaksi")
