@@ -25,6 +25,13 @@ class Api {
     throw ApiGagal(r.statusCode, pesan.toString());
   }
 
+  /// Ping ringan untuk membangunkan server gratis yang sedang tidur. Dipanggil saat aplikasi dibuka.
+  static Future<void> bangunkan() async {
+    try {
+      await http.get(_u('/actuator/health')).timeout(const Duration(seconds: 120));
+    } catch (_) {}
+  }
+
   static Future<Map<String, dynamic>> daftar({required String nama, String? namaUsaha, required String noWa}) async =>
       _hasil(await http.post(_u('/api/pedagang'),
           headers: _header, body: jsonEncode({'nama': nama, 'namaUsaha': namaUsaha, 'noWa': noWa})));

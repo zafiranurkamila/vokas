@@ -223,7 +223,7 @@ class _TabBerandaState extends State<TabBeranda> {
               return ListView(padding: paddingTab, children: [
                 kepala,
                 const SizedBox(height: 80),
-                const Center(child: CircularProgressIndicator()),
+                const MemuatServer(),
               ]);
             }
             final (lap, trx, kur) = snap.data!;
@@ -620,3 +620,41 @@ class TombolNotif extends StatelessWidget {
         },
       );
 }
+
+/// Indikator memuat. Bila lebih dari 5 detik, beri tahu bahwa server gratis sedang bangun.
+class MemuatServer extends StatefulWidget {
+  const MemuatServer({super.key});
+
+  @override
+  State<MemuatServer> createState() => _MemuatServerState();
+}
+
+class _MemuatServerState extends State<MemuatServer> {
+  bool _lama = false;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(const Duration(seconds: 5), () {
+      if (mounted) setState(() => _lama = true);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => Column(children: [
+        const CircularProgressIndicator(),
+        AnimatedOpacity(
+          opacity: _lama ? 1 : 0,
+          duration: const Duration(milliseconds: 400),
+          child: const Padding(
+            padding: EdgeInsets.fromLTRB(24, 16, 24, 0),
+            child: Text(
+              'Server sedang dinyalakan, biasanya kurang dari 1 menit. Setelah ini akan cepat.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Warna.redup, fontSize: 13, height: 1.5),
+            ),
+          ),
+        ),
+      ]);
+}
+

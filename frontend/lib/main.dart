@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'api.dart';
 import 'layar/beranda.dart';
 import 'layar/notifikasi.dart';
 import 'notif.dart';
@@ -13,6 +14,7 @@ import 'tema.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Sesi.muat();
+  Api.bangunkan(); // tidak ditunggu: server mulai menyala selama splash dan intro tampil
   PusatNotif.i.bukaDaftar = () =>
       kunciNavigator.currentState?.push(MaterialPageRoute(builder: (_) => const LayarNotifikasi()));
   runApp(const VokasApp());
