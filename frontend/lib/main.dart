@@ -99,7 +99,7 @@ void _tampilMenunggu(bool menunggu) {
       SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Warna.matahari)),
       SizedBox(width: 14),
       Expanded(
-        child: Text('Server sedang dinyalakan, tunggu sebentar (bisa sampai 2 menit)...',
+        child: Text('Menyiapkan VoKas, sebentar ya...',
             style: TextStyle(color: Colors.white, fontSize: 13.5, height: 1.4)),
       ),
     ]),

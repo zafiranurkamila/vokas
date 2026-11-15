@@ -9,7 +9,8 @@ import 'package:http_parser/http_parser.dart';
 ///   flutter run -d chrome --dart-define=API_URL=http://localhost:8080
 ///   flutter build web --dart-define=API_URL=https://xxx.onrender.com --dart-define=API_KEY=...
 class Api {
-  static const base = String.fromEnvironment('API_URL', defaultValue: 'http://localhost:8080');
+  /// Bawaan: server produksi di Render. Untuk tes lokal: --dart-define=API_URL=http://localhost:8080
+  static const base = String.fromEnvironment('API_URL', defaultValue: 'https://vokas-backend.onrender.com');
   static const _kunci = String.fromEnvironment('API_KEY');
 
   /// Batas menunggu server gratis (Render) yang sedang bangun dari tidur.
@@ -49,7 +50,7 @@ class Api {
           if (DateTime.now().difference(mulai) > _batasBangun) rethrow;
         }
         if (DateTime.now().difference(mulai) > _batasBangun) {
-          throw ApiGagal(503, 'Server masih dinyalakan. Coba lagi sebentar lagi.');
+          throw ApiGagal(503, 'VoKas belum siap. Coba lagi sebentar lagi.');
         }
         if (!memberiTahu) {
           memberiTahu = true;
@@ -73,7 +74,7 @@ class Api {
     if (r.statusCode >= 200 && r.statusCode < 300) return body;
     final pesan = body is Map
         ? (body['message'] ?? body['error'] ?? 'Terjadi kesalahan')
-        : (r.statusCode >= 500 ? 'Server sedang bermasalah (${r.statusCode}). Coba lagi sebentar.' : 'Terjadi kesalahan');
+        : (r.statusCode >= 500 ? 'Ada gangguan sebentar (${r.statusCode}). Coba lagi ya.' : 'Terjadi kesalahan');
     throw ApiGagal(r.statusCode, pesan.toString());
   }
 

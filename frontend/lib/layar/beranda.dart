@@ -716,7 +716,7 @@ class _MemuatServerState extends State<MemuatServer> {
           child: const Padding(
             padding: EdgeInsets.fromLTRB(24, 16, 24, 0),
             child: Text(
-              'Server sedang dinyalakan, biasanya kurang dari 1 menit. Setelah ini akan cepat.',
+              'Menyiapkan datamu, sebentar ya...',
               textAlign: TextAlign.center,
               style: TextStyle(color: Warna.redup, fontSize: 13, height: 1.5),
             ),
