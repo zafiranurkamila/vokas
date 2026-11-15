@@ -80,19 +80,43 @@ public class PembacaGemini implements PembacaCatatan {
                         "temperature", 0,
                         "responseMimeType", "application/json",
                         "responseSchema", skema()));
-        // Free tier sering "overloaded" (503) atau lambat: coba model utama 2x, lalu model cadangan sekali.
-        List<String> urutan = new ArrayList<>(List.of(cfg.model(), cfg.model()));
-        if (cfg.modelCadangan() != null && !cfg.modelCadangan().isBlank() && !cfg.modelCadangan().equals(cfg.model())) {
-            urutan.add(cfg.modelCadangan());
-        }
+        // Free tier sering "overloaded" (503), lambat, atau modelnya sudah pensiun (404).
+        // Urutan: model utama 2x, lalu tiap model cadangan sekali. Model 404 dilewati tanpa jeda.
+        List<String> urutan = urutanModel();
         HasilBaca terakhir = HasilBaca.gagal(nama(), "AI sedang tidak bisa dihubungi");
-        for (int i = 0; i < urutan.size(); i++) {
-            if (i > 0) jeda(1500L * i);
-            HasilBaca h = panggilSekali(urutan.get(i), body);
-            if (h.galat() == null || !(h.galat().startsWith(SEMENTARA) || h.galat().startsWith("Model AI"))) return h;
+        boolean perluJeda = false;
+        long mulai = System.currentTimeMillis();
+        for (String model : urutan) {
+            if (System.currentTimeMillis() - mulai > 75_000) break;   // jangan biarkan pengguna menunggu terlalu lama
+            if (perluJeda) jeda(1200);
+            HasilBaca h = panggilSekali(model, body);
+            if (h.galat() == null) {
+                if (!model.equals(cfg.model())) log.info("Gemini memakai model cadangan {}", model);
+                return h;
+            }
+            boolean sementara = h.galat().startsWith(SEMENTARA);
+            boolean tidakAda = h.galat().startsWith("Model AI");
+            if (!sementara && !tidakAda) return h;   // API key salah, kuota habis, dsb.: model lain tidak membantu
+            perluJeda = sementara;
             terakhir = h;
         }
         return terakhir;
+    }
+
+    List<String> urutanModel() {
+        List<String> urutan = new ArrayList<>(List.of(cfg.model(), cfg.model()));
+        if (cfg.modelCadangan() != null) {
+            for (String m : cfg.modelCadangan().split(",")) {
+                String t = m.trim();
+                if (!t.isEmpty() && !urutan.contains(t)) urutan.add(t);
+            }
+        }
+        return urutan;
+    }
+
+    /** Model yang dicoba berurutan; dipakai juga oleh endpoint cek. */
+    public List<String> daftarModel() {
+        return urutanModel().stream().distinct().toList();
     }
 
     /** Awalan pesan untuk gangguan sementara yang layak dicoba ulang. */

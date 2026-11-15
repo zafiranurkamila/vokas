@@ -28,6 +28,7 @@ public class AiController {
         Map<String, Object> out = new LinkedHashMap<>();
         out.put("apiKeyTerisi", gemini.aktif());
         out.put("model", props.gemini().model());
+        out.put("urutanModel", gemini.daftarModel());
         if (!gemini.aktif()) {
             out.put("ok", false);
             out.put("galat", "GEMINI_API_KEY belum diisi di server");
