@@ -16,6 +16,9 @@ class Api {
   /// Batas menunggu server gratis (Render) yang sedang bangun dari tidur.
   static const _batasBangun = Duration(seconds: 180);
 
+  /// Batas mencoba ulang bila koneksi gagal total (bukan karena server sedang bangun).
+  static const _batasKoneksi = Duration(seconds: 15);
+
   /// Dipanggil saat aplikasi sedang menunggu server bangun, supaya layar bisa memberi tahu pengguna.
   static void Function(bool menunggu)? onMenungguServer;
 
@@ -46,8 +49,9 @@ class Api {
         } on TimeoutException {
           rethrow;
         } catch (_) {
-          // koneksi gagal (server belum menerima koneksi, jaringan putus sesaat)
-          if (DateTime.now().difference(mulai) > _batasBangun) rethrow;
+          // Koneksi gagal total (alamat salah, CORS, internet putus). Server Render yang sedang bangun
+          // tetap menjawab dengan halaman "loading", jadi kegagalan seperti ini hanya dicoba ulang sebentar.
+          if (DateTime.now().difference(mulai) > _batasKoneksi) rethrow;
         }
         if (DateTime.now().difference(mulai) > _batasBangun) {
           throw ApiGagal(503, 'VoKas belum siap. Coba lagi sebentar lagi.');
