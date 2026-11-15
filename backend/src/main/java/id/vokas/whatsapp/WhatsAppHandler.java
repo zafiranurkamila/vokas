@@ -16,6 +16,8 @@ import org.springframework.stereotype.Component;
 import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.util.Locale;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /** Memproses pesan masuk di luar thread webhook, karena Meta meminta balasan HTTP 200 secepatnya. */
 @Component
@@ -58,42 +60,56 @@ public class WhatsAppHandler {
 
     private void prosesPesan(JsonNode msg, String namaProfil) {
         String dari = msg.path("from").asText();
-        Pedagang p = pedagangRepo.findByNoWa(dari).orElseGet(() -> daftarBaru(dari, namaProfil));
         String tipe = msg.path("type").asText();
+        Supplier<WhatsAppClient.Media> audio = "audio".equals(tipe) ? () -> wa.unduh(msg.at("/audio/id").asText()) : null;
+        String teks = "text".equals(tipe) ? msg.at("/text/body").asText("") : null;
+        tanggapi(dari, namaProfil, teks, audio, isi -> wa.kirimTeks(dari, isi));
+    }
 
-        if ("audio".equals(tipe)) {
-            WhatsAppClient.Media m = wa.unduh(msg.at("/audio/id").asText());
-            wa.kirimTeks(dari, balasanCatat(transaksi.catatSuara(p.getId(), m.isi(), m.mimeType())));
+    /**
+     * Inti percakapan, sama untuk semua penyedia WhatsApp (Meta Cloud API atau Twilio).
+     *
+     * @param noWa  nomor pengirim format 62xxxxxxxx
+     * @param teks  isi pesan teks, atau null bila bukan teks
+     * @param audio pengunduh voice note, atau null bila bukan audio
+     * @param kirim cara mengirim balasan ke pengirim
+     */
+    public void tanggapi(String noWa, String namaProfil, String teks, Supplier<WhatsAppClient.Media> audio, Consumer<String> kirim) {
+        Pedagang p = pedagangRepo.findByNoWa(noWa).orElseGet(() -> daftarBaru(noWa, namaProfil, kirim));
+
+        if (audio != null) {
+            WhatsAppClient.Media m = audio.get();
+            kirim.accept(balasanCatat(transaksi.catatSuara(p.getId(), m.isi(), m.mimeType())));
             return;
         }
-        if (!"text".equals(tipe)) {
-            wa.kirimTeks(dari, "Kirim voice note atau ketik catatan, contoh: jual cilok 30 bungkus dua ribuan.");
+        if (teks == null || teks.isBlank()) {
+            kirim.accept("Kirim voice note atau ketik catatan, contoh: jual cilok 30 bungkus dua ribuan.");
             return;
         }
-        String teks = msg.at("/text/body").asText("").trim();
+        teks = teks.trim();
         String kecil = teks.toLowerCase(Locale.ROOT);
         if (kecil.equals("laporan") || kecil.equals("rekap")) {
             LocalDate hari = transaksi.hariIni();
             LaporanService.Laporan l = laporan.buat(p.getId(), hari, hari);
-            wa.kirimTeks(dari, "Rekap hari ini\nMasuk: " + rp(l.omzet()) + "\nKeluar: " + rp(l.pengeluaran())
+            kirim.accept("Rekap hari ini\nMasuk: " + rp(l.omzet()) + "\nKeluar: " + rp(l.pengeluaran())
                     + "\nUntung: " + rp(l.laba()));
         } else if (kecil.equals("rapor") || kecil.equals("kur")) {
             SkorKurService.Rapor r = kur.hitung(p.getId());
-            wa.kirimTeks(dari, "Rapor Kesiapan KUR: " + r.skor() + "/100\n" + r.status()
+            kirim.accept("Rapor Kesiapan KUR: " + r.skor() + "/100\n" + r.status()
                     + "\n" + r.hariTercatat() + " dari " + r.hariTotal() + " hari tercatat");
-        } else if (kecil.equals("bantuan") || kecil.equals("halo") || kecil.equals("hai")) {
-            wa.kirimTeks(dari, bantuan());
+        } else if (kecil.equals("bantuan") || kecil.equals("halo") || kecil.equals("hai") || kecil.startsWith("join ")) {
+            kirim.accept(bantuan());
         } else {
-            wa.kirimTeks(dari, balasanCatat(transaksi.catatTeks(p.getId(), teks, true)));
+            kirim.accept(balasanCatat(transaksi.catatTeks(p.getId(), teks, true)));
         }
     }
 
-    private Pedagang daftarBaru(String noWa, String nama) {
+    private Pedagang daftarBaru(String noWa, String nama, Consumer<String> kirim) {
         Pedagang p = new Pedagang();
         p.setNoWa(noWa);
-        p.setNama(nama);
+        p.setNama(nama == null || nama.isBlank() ? "Pedagang" : nama);
         Pedagang baru = pedagangRepo.save(p);
-        wa.kirimTeks(noWa, "Selamat datang di VoKas, " + nama + "!\n" + bantuan());
+        kirim.accept("Selamat datang di VoKas, " + p.getNama() + "!\n" + bantuan());
         return baru;
     }
 
