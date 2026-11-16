@@ -38,6 +38,9 @@ public class WhatsAppClient {
         return new Media(isi, info.path("mime_type").asText("audio/ogg"));
     }
 
+    /** true bila kredensial pengiriman sudah diisi. */
+    public boolean aktif() { return cfg.aktif(); }
+
     public void kirimTeks(String ke, String teks) {
         if (!cfg.aktif()) {
             log.info("WA belum aktif, balasan ke {} tidak dikirim:\n{}", ke, teks);

@@ -37,6 +37,9 @@ public class TwilioClient {
     }
 
     /** ke: nomor 62xxxxxxxx. Pesan WhatsApp maksimal 1600 karakter. */
+    /** true bila kredensial pengiriman sudah diisi. */
+    public boolean aktif() { return cfg.aktif(); }
+
     public void kirimTeks(String ke, String teks) {
         if (!cfg.aktif()) {
             log.info("Twilio belum aktif, balasan ke {} tidak dikirim:\n{}", ke, teks);

@@ -9,6 +9,7 @@ import 'beranda.dart';
 import 'sambung_bri.dart';
 import '../izin.dart';
 import '../widget/verifikasi_pin.dart';
+import '../widget/kartu_email.dart';
 
 class TabProfil extends StatefulWidget {
   const TabProfil({super.key, required this.onDataBerubah});
@@ -237,6 +238,9 @@ class _TabProfilState extends State<TabProfil> {
           subtitle: const Text('Menambah 15 poin di Rapor KUR', style: TextStyle(fontSize: 12.5)),
         ),
       ),
+      const SizedBox(height: 22),
+      const _Judul('Laporan ke email'),
+      const KartuEmail(),
       const SizedBox(height: 22),
       const _Judul('Data demo'),
       Kartu(

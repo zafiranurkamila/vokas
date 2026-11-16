@@ -3,7 +3,7 @@ package id.vokas.config;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(prefix = "vokas")
-public record VokasProperties(String apiKey, String corsOrigins, String zonaWaktu, Gemini gemini, Wa wa, Twilio twilio, Bri bri) {
+public record VokasProperties(String apiKey, String corsOrigins, String zonaWaktu, Gemini gemini, Wa wa, Twilio twilio, Bri bri, Mail mail) {
 
     /** Kredensial BRIAPI (SNAP BI) dari portal developers.bri.co.id. privateKey: PEM PKCS#8, boleh dengan \n. */
     public record Bri(String baseUrl, String clientId, String clientSecret, String privateKey, String partnerId, String channelId,
@@ -25,6 +25,9 @@ public record VokasProperties(String apiKey, String corsOrigins, String zonaWakt
             return accountSid != null && !accountSid.isBlank() && authToken != null && !authToken.isBlank();
         }
     }
+
+    /** Pengirim email laporan. Server SMTP-nya diatur lewat spring.mail.*. */
+    public record Mail(String from, String namaPengirim) {}
 
     public record Gemini(String apiKey, String model, String modelCadangan) {
         public boolean aktif() { return apiKey != null && !apiKey.isBlank(); }

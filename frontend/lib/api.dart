@@ -125,6 +125,21 @@ class Api {
       .post(_u('/api/ai/pedagang/$id/tanya'), headers: _header, body: jsonEncode({'pertanyaan': pertanyaan}))
       .timeout(const Duration(seconds: 90))));
 
+  /// Email laporan: kirim kode OTP ke email, lalu verifikasi.
+  static Future<Map<String, dynamic>> daftarEmail(String id, String email) async => _hasil(
+      await _coba(() => http.post(_u('/api/pedagang/$id/email'), headers: _header, body: jsonEncode({'email': email}))));
+
+  static Future<Map<String, dynamic>> verifikasiEmail(String id, String kode) async => _hasil(await _coba(
+      () => http.post(_u('/api/pedagang/$id/email/verifikasi'), headers: _header, body: jsonEncode({'kode': kode}))));
+
+  static Future<Map<String, dynamic>> aturLaporanEmail(String id, bool aktif) async => _hasil(await _coba(
+      () => http.patch(_u('/api/pedagang/$id/email'), headers: _header, body: jsonEncode({'laporanEmail': aktif}))));
+
+  /// jenis: 'harian' (settlement hari ini) atau 'bulanan' (bulan berjalan). Hasil: {email, wa}
+  static Future<Map<String, dynamic>> kirimLaporanEmail(String id, String jenis) async => _hasil(await _coba(() => http
+      .post(_u('/api/pedagang/$id/email/kirim-laporan', {'jenis': jenis}), headers: _header)
+      .timeout(const Duration(seconds: 60))));
+
   /// Riwayat tersimpan: jenis 'TANYA' (Tanya AI) atau 'CATAT' (voice note / teks). Urut dari yang paling lama.
   static Future<List<dynamic>> riwayatAi(String id, String jenis) async =>
       _hasil(await _coba(() => http.get(_u('/api/pedagang/$id/riwayat-ai', {'jenis': jenis}), headers: _header)));
