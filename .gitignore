@@ -21,3 +21,7 @@ frontend/.flutter-plugins-dependencies
 # kunci rahasia (BRIAPI SNAP, dll.)
 *.pem
 *.key
+
+# bukti kuisoner (foto responden, data pribadi)
+kuisoner/
+proposal/

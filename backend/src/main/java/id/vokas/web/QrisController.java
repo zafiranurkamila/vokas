@@ -42,7 +42,7 @@ public class QrisController {
 
     public record Pengajuan(@NotBlank @Size(max = 120) String namaPemilik, @NotBlank @Size(max = 160) String namaUsaha,
                             @NotBlank String kategori, @NotBlank @Size(max = 300) String alamat, @NotBlank String kota,
-                            @NotBlank String kisaranOmzet,
+                            @NotBlank String kisaranOmzet, @Size(max = 40) String jenisRekening,
                             @Pattern(regexp = "^\\d{10,16}$", message = "nomor rekening BRI 10-16 angka") String nomorRekening,
                             @AssertTrue(message = "persetujuan wajib") boolean setuju) {}
 
@@ -59,6 +59,7 @@ public class QrisController {
         q.setAlamat(b.alamat().trim());
         q.setKota(b.kota().trim());
         q.setKisaranOmzet(b.kisaranOmzet());
+        q.setJenisRekening(b.jenisRekening() == null || b.jenisRekening().isBlank() ? "Tabungan BRI" : b.jenisRekening());
         q.setRekeningAkhir(b.nomorRekening().substring(b.nomorRekening().length() - 4));   // nomor lengkap tidak disimpan
         q.setReferensi("VKQ-" + Long.toString(Math.abs(UUID.randomUUID().getMostSignificantBits()) % 100_000_000L, 36).toUpperCase());
         q.setDiperbarui(OffsetDateTime.now());
@@ -97,6 +98,7 @@ public class QrisController {
         out.put("kategori", q.getKategori());
         out.put("kota", q.getKota());
         out.put("rekeningAkhir", q.getRekeningAkhir());
+        out.put("jenisRekening", q.getJenisRekening());
         out.put("diajukan", awal.toString());
         out.put("simulasi", true);
         out.put("tahap", List.of(
@@ -104,7 +106,8 @@ public class QrisController {
                 tahap("Verifikasi BRI", "BRI memeriksa identitas pemilik dan rekening penampung dana.",
                         !"DIAJUKAN".equals(q.getStatus()), awal.plus(KE_VERIFIKASI)),
                 tahap("QRIS aktif", q.getNmid() == null ? "QRIS BRI terbit dan siap dipasang di lapak."
-                        : "NMID " + q.getNmid() + ". Pembayaran masuk ke rekening BRI ****" + q.getRekeningAkhir() + ".",
+                        : "NMID " + q.getNmid() + ". Pembayaran masuk ke " + (q.getJenisRekening() == null ? "rekening BRI" : q.getJenisRekening())
+                                + " ****" + q.getRekeningAkhir() + ".",
                         "AKTIF".equals(q.getStatus()), awal.plus(KE_AKTIF))));
         return out;
     }

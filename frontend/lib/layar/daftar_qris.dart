@@ -21,7 +21,9 @@ class LayarDaftarQris extends StatefulWidget {
 }
 
 const _kategori = ['Makanan & minuman', 'Sayur & bahan pokok', 'Kelontong / warung', 'Jasa', 'Lainnya'];
-const _omzet = ['Di bawah Rp1 juta / bulan', 'Rp1 - 5 juta / bulan', 'Rp5 - 15 juta / bulan', 'Di atas Rp15 juta / bulan'];
+const _omzet = ['< Rp1 jt/bln', 'Rp1-5 jt/bln', 'Rp5-15 jt/bln', '> Rp15 jt/bln'];
+/// Produk tabungan BRI yang umum dipakai pelaku usaha mikro sebagai rekening penampung dana QRIS.
+const _rekening = ['Simpedes', 'Simpedes UMi', 'BritAma', 'BritAma Bisnis', 'Tabungan BRI lain'];
 
 class _LayarDaftarQrisState extends State<LayarDaftarQris> {
   Map<String, dynamic>? _status;
@@ -37,6 +39,7 @@ class _LayarDaftarQrisState extends State<LayarDaftarQris> {
   final _rek = TextEditingController();
   String _kat = _kategori.first;
   String _omz = _omzet[1];
+  String _jenisRek = _rekening.first;
   bool _setuju = false;
 
   @override
@@ -84,6 +87,7 @@ class _LayarDaftarQrisState extends State<LayarDaftarQris> {
         'alamat': _alamat.text.trim(),
         'kota': _kota.text.trim(),
         'kisaranOmzet': _omz,
+        'jenisRekening': _jenisRek,
         'nomorRekening': _rek.text.replaceAll(RegExp(r'\D'), ''),
         'setuju': true,
       });
@@ -154,12 +158,7 @@ class _LayarDaftarQrisState extends State<LayarDaftarQris> {
               validator: (v) => (v ?? '').trim().length < 3 ? 'Wajib diisi' : null,
             ),
             const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              value: _kat,
-              decoration: const InputDecoration(labelText: 'Kategori usaha', prefixIcon: Icon(Icons.category_outlined)),
-              items: [for (final k in _kategori) DropdownMenuItem(value: k, child: Text(k))],
-              onChanged: (v) => setState(() => _kat = v ?? _kat),
-            ),
+            _Pilihan(judul: 'Kategori usaha', opsi: _kategori, nilai: _kat, onPilih: (v) => setState(() => _kat = v)),
             const SizedBox(height: 12),
             TextFormField(
               controller: _alamat,
@@ -175,12 +174,13 @@ class _LayarDaftarQrisState extends State<LayarDaftarQris> {
               validator: (v) => (v ?? '').trim().length < 3 ? 'Wajib diisi' : null,
             ),
             const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              value: _omz,
-              decoration: const InputDecoration(labelText: 'Perkiraan omzet', prefixIcon: Icon(Icons.trending_up_rounded)),
-              items: [for (final o in _omzet) DropdownMenuItem(value: o, child: Text(o))],
-              onChanged: (v) => setState(() => _omz = v ?? _omz),
-            ),
+            _Pilihan(judul: 'Perkiraan omzet', opsi: _omzet, nilai: _omz, onPilih: (v) => setState(() => _omz = v)),
+            const SizedBox(height: 4),
+            _Pilihan(
+                judul: 'Jenis rekening BRI penampung dana',
+                opsi: _rekening,
+                nilai: _jenisRek,
+                onPilih: (v) => setState(() => _jenisRek = v)),
             const SizedBox(height: 12),
             TextFormField(
               controller: _rek,
@@ -263,7 +263,8 @@ class _LayarDaftarQrisState extends State<LayarDaftarQris> {
               dataModuleStyle: const QrDataModuleStyle(dataModuleShape: QrDataModuleShape.square, color: Warna.tinta),
             ),
             const SizedBox(height: 8),
-            Text('Dana masuk ke rekening BRI ****${s['rekeningAkhir']}', style: const TextStyle(fontSize: 12.5)),
+            Text('Dana masuk ke ${s['jenisRekening'] ?? 'rekening BRI'} ****${s['rekeningAkhir']}',
+                style: const TextStyle(fontSize: 12.5)),
             const SizedBox(height: 6),
             const Text('Contoh tampilan. QRIS asli diterbitkan BRI setelah verifikasi.',
                 textAlign: TextAlign.center, style: TextStyle(fontSize: 11.5, color: Warna.redup)),
@@ -310,4 +311,34 @@ class _BarisTahap extends StatelessWidget {
       ),
     ]);
   }
+}
+
+/// Pilihan ringkas berbentuk chip (pengganti dropdown yang menu-nya melebar penuh layar).
+class _Pilihan extends StatelessWidget {
+  const _Pilihan({required this.judul, required this.opsi, required this.nilai, required this.onPilih});
+  final String judul;
+  final List<String> opsi;
+  final String nilai;
+  final ValueChanged<String> onPilih;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(judul, style: const TextStyle(fontSize: 12.5, color: Warna.redup, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 6),
+          Wrap(spacing: 6, runSpacing: 6, children: [
+            for (final o in opsi)
+              ChoiceChip(
+                label: Text(o, style: const TextStyle(fontSize: 12.5)),
+                selected: o == nilai,
+                onSelected: (_) => onPilih(o),
+                selectedColor: Warna.khaki,
+                showCheckmark: false,
+                visualDensity: VisualDensity.compact,
+                side: const BorderSide(color: Warna.garis),
+              ),
+          ]),
+        ]),
+      );
 }

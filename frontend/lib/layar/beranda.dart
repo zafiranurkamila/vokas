@@ -8,6 +8,7 @@ import '../tema.dart';
 import '../widget/tur.dart';
 import 'catat.dart';
 import 'hitung_kur.dart';
+import 'daftar_qris.dart';
 import 'tanya_ai.dart';
 import 'terima_qris.dart';
 import 'laporan.dart';
@@ -278,6 +279,7 @@ class _TabBerandaState extends State<TabBeranda> {
               _KartuUntung(lap, target: Sesi.targetHarian, aksi: [
                 _Aksi(Icons.auto_awesome_rounded, 'Tanya AI', () => _buka(const LayarTanyaAi())),
                 _Aksi(Icons.qr_code_2_rounded, 'Terima QRIS', () => _buka(const LayarTerimaQris())),
+                _Aksi(Icons.app_registration_rounded, 'Daftar QRIS', () => _buka(const LayarDaftarQris())),
                 _Aksi(Icons.calculate_outlined, 'Hitung KUR', () => _buka(const LayarHitungKur())),
                 _Aksi(Icons.flag_outlined, 'Target', _aturTarget),
               ]),
@@ -439,7 +441,11 @@ class _KartuUntung extends StatelessWidget {
                         child: Icon(a.ikon, color: Warna.oliveTua, size: 22),
                       ),
                       const SizedBox(height: 6),
-                      Text(a.label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                      Text(a.label,
+                          textAlign: TextAlign.center,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w500)),
                     ]),
                   ),
                 ),

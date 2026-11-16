@@ -7,7 +7,6 @@ import '../sesi.dart';
 import '../tema.dart';
 import 'beranda.dart';
 import 'sambung_bri.dart';
-import 'daftar_qris.dart';
 import '../izin.dart';
 import '../widget/verifikasi_pin.dart';
 
@@ -225,12 +224,6 @@ class _TabProfilState extends State<TabProfil> {
               child: const Text('Hubungkan rekening BRI'),
             ),
         ]),
-      ),
-      const SizedBox(height: 10),
-      Kartu(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: _Baris(Icons.qr_code_2_rounded, 'Daftar QRIS BRI', 'Ajukan merchant QRIS, diverifikasi oleh BRI',
-            onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LayarDaftarQris()))),
       ),
       const SizedBox(height: 22),
       const _Judul('Usaha'),

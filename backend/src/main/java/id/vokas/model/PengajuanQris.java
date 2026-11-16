@@ -20,6 +20,7 @@ public class PengajuanQris {
     @Column(nullable = false) private String kota;
     @Column(nullable = false) private String kisaranOmzet;
     @Column(nullable = false) private String rekeningAkhir;
+    private String jenisRekening;
     @Column(nullable = false) private String status = "DIAJUKAN";
     private String nmid;
     @Column(nullable = false) private String referensi;
@@ -45,6 +46,8 @@ public class PengajuanQris {
     public void setKisaranOmzet(String v) { kisaranOmzet = v; }
     public String getRekeningAkhir() { return rekeningAkhir; }
     public void setRekeningAkhir(String v) { rekeningAkhir = v; }
+    public String getJenisRekening() { return jenisRekening; }
+    public void setJenisRekening(String v) { jenisRekening = v; }
     public String getStatus() { return status; }
     public void setStatus(String v) { status = v; }
     public String getNmid() { return nmid; }

@@ -35,6 +35,12 @@ public class PembacaGemini implements PembacaCatatan {
             - total adalah rupiah untuk baris itu (bilangan bulat, tanpa titik). "dua ribuan" berarti harga per satuan,
               jadi total = jumlah x harga.
             - jumlah dan satuan diisi bila disebut (contoh 30 bungkus); bila tidak, kosongkan.
+            - "10k", "10rb", "10 ribu" sama dengan 10000. "dengan harga X", "harga X", "X per", "@X", atau "X-an" berarti harga
+              per satuan, jadi total = jumlah x X. Contoh: "terjual 50 ayam dengan harga 10k" -> jumlah 50, total 500000.
+            - Angka kecil sebelum atau sesudah nama barang adalah jumlah, contoh "50 ayam" atau "ayam 50".
+            - Untuk penjualan "N barang X" tanpa kata harga: bila X kecil untuk satu barang dagangan pedagang kecil
+              (sampai sekitar 50 ribu) dan N lebih dari 1, anggap X harga per satuan. Contoh "tambahan 10 kentang 30k" -> 300000.
+            - Pisahkan setiap barang menjadi baris sendiri, termasuk yang disambung "terus", "tambahan", "sama", atau "dan".
             - nama adalah nama barang singkat huruf kecil, contoh "cilok", "gas melon".
             - Jangan mengarang transaksi yang tidak disebut. Bila tidak ada nominal, jangan buat barisnya.
             - transkrip adalah teks yang kamu dengar (untuk audio) atau teks masukan apa adanya.

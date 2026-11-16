@@ -24,7 +24,8 @@ public class PembacaAturan implements PembacaCatatan {
             "botol", "plastik", "kg", "kilo", "liter", "bks", "potong", "pack", "box");
     private static final Set<String> STOP = Set.of("hari", "ini", "tadi", "dari", "jualan", "yang", "buat", "untuk",
             "per", "harga", "satuan", "rupiah", "aku", "saya", "kita", "total", "semua", "sebanyak", "isi",
-            "pagi", "siang", "sore", "malam", "sekitar", "kurang", "lebih", "an");
+            "pagi", "siang", "sore", "malam", "sekitar", "kurang", "lebih", "an", "dengan", "ada", "tambahan", "lagi",
+            "juga", "nya", "masing", "seharga", "sebesar", "laku", "udah", "sudah");
     private static final Pattern PEMISAH = Pattern.compile("\\s*[,;]\\s*|\\s+(?:dan|terus|trus|lalu|sama)\\s+");
     private static final Pattern ANGKA_SINGKAT = Pattern.compile("(\\d+)(rb|k|jt|ribu|juta)\\b");
 
@@ -43,6 +44,7 @@ public class PembacaAturan implements PembacaCatatan {
             Potongan p = urai(potong.trim().split("\\s+"));
             Jenis jenis = p.jenis != null ? p.jenis : jenisSebelum;   // "terus gas melon 22 ribu" mewarisi "beli"
             if (jenis == null || p.nominal == null) { lengkap = false; continue; }
+            if (p.ragu) lengkap = false;
             jenisSebelum = jenis;
             boolean perSatuan = p.ribuan || p.adaKataPer
                     || (jenis == Jenis.MASUK && p.qty != null && p.qty > 1 && p.nominal <= 10_000);
@@ -71,6 +73,8 @@ public class PembacaAturan implements PembacaCatatan {
         String satuan;
         boolean ribuan;
         boolean adaKataPer;
+        Integer qtyCalon;      // angka kecil tanpa satuan, misalnya "50 ayam" atau "ayam 50"
+        boolean ragu;          // kalimat ambigu: biarkan AI yang memutuskan
         String nama = "";
     }
 
@@ -91,7 +95,10 @@ public class PembacaAturan implements PembacaCatatan {
                     p.qty = (int) a.nilai;
                     p.satuan = kata[i];
                     i++;
+                } else if (!a.uang && a.nilai > 0 && a.nilai < 1_000 && p.qty == null && p.qtyCalon == null) {
+                    p.qtyCalon = (int) a.nilai;   // angka kecil tanpa "ribu": kemungkinan jumlah barang
                 } else {
+                    if (p.nominal != null) p.ragu = true;   // dua nominal uang dalam satu potongan
                     p.nominal = a.nilai;
                     p.ribuan |= a.ribuan;
                 }
@@ -99,6 +106,15 @@ public class PembacaAturan implements PembacaCatatan {
             }
             if (!SATUAN.contains(k) && !STOP.contains(k)) namaKata.add(k);
             i++;
+        }
+        if (p.qtyCalon != null) {
+            if (p.nominal == null) {
+                p.nominal = (long) p.qtyCalon;   // satu-satunya angka: anggap nominal
+            } else if (p.qty == null) {
+                p.qty = p.qtyCalon;
+                // "10 kentang 30rb" tanpa kata "harga"/"per": total atau harga satuan? biar AI yang menentukan
+                if (!p.adaKataPer && !p.ribuan && p.nominal > 10_000) p.ragu = true;
+            }
         }
         p.nama = String.join(" ", namaKata);
         return p;
@@ -112,7 +128,8 @@ public class PembacaAturan implements PembacaCatatan {
         return angkaDigit(k) || ANGKA.containsKey(k) || k.equals("seratus") || k.equals("seribu") || k.equals("sejuta");
     }
 
-    private record Angka(long nilai, int akhir, boolean ribuan) {}
+    /** uang = memakai "ribu/rb/k/juta" atau bernilai >= 1000, jadi pasti nominal rupiah, bukan jumlah barang. */
+    private record Angka(long nilai, int akhir, boolean ribuan, boolean uang) {}
 
     /** Membaca satu bilangan mulai dari indeks i, contoh "dua puluh dua ribu", "38000", atau "50 rb". */
     private static Angka bacaAngka(String[] kata, int i) {
@@ -152,6 +169,7 @@ public class PembacaAturan implements PembacaCatatan {
             }
             i++;
         }
-        return new Angka(total + grup + satuan, i, ribuan);
+        long nilai = total + grup + satuan;
+        return new Angka(nilai, i, ribuan, total > 0 || nilai >= 1_000);
     }
 }

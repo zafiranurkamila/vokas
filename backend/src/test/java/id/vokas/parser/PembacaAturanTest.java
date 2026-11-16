@@ -93,4 +93,19 @@ class PembacaAturanTest {
         assertFalse(h.lengkap());
         assertEquals(1, h.items().size());
     }
+
+    @org.junit.jupiter.api.Test
+    void jumlahSebelumNamaDanKataHarga() {
+        var h = new PembacaAturan().bacaTeks("jual ayam 50 harga 10rb, kentang 10 harga 30rb");
+        org.junit.jupiter.api.Assertions.assertTrue(h.lengkap());
+        org.junit.jupiter.api.Assertions.assertEquals(500_000, h.items().get(0).total());
+        org.junit.jupiter.api.Assertions.assertEquals(300_000, h.items().get(1).total());
+    }
+
+    @org.junit.jupiter.api.Test
+    void kalimatAmbiguDiserahkanKeAi() {
+        var h = new PembacaAturan().bacaTeks("terjual 50 ayam dengan harga 10k terus ada tambahan 10 kentang 30k");
+        org.junit.jupiter.api.Assertions.assertFalse(h.lengkap(), "10 kentang 30k ambigu, harus dibaca AI");
+        org.junit.jupiter.api.Assertions.assertEquals(500_000, h.items().get(0).total());
+    }
 }

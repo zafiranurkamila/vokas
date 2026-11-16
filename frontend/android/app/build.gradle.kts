@@ -53,6 +53,7 @@ android {
 
     buildTypes {
         release {
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             signingConfig = if (kunciRilis != null && file(kunciRilis).exists())
                 signingConfigs.getByName("rilis") else signingConfigs.getByName("debug")
         }
