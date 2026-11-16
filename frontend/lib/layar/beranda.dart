@@ -386,7 +386,7 @@ class _TabBerandaState extends State<TabBeranda> {
                   tombol: 'Buka kasbon',
                   foto: 'assets/banner/kasbon.jpg',
                   ikon: Icons.menu_book_rounded,
-                  warna: Warna.qris,
+                  warna: Warna.oliveTua,
                   onTap: () => _buka(const LayarKasbon()),
                 ),
               ]),

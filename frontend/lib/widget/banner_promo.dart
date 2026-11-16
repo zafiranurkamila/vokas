@@ -52,7 +52,7 @@ class _BannerPromoState extends State<BannerPromo> {
   @override
   Widget build(BuildContext context) => Column(children: [
         SizedBox(
-          height: 150,
+          height: 158,
           child: PageView.builder(
             controller: _ctrl,
             padEnds: false,
@@ -86,20 +86,21 @@ class _Kartu extends StatelessWidget {
   final Promo p;
 
   @override
-  Widget build(BuildContext context) => Material(
-        color: p.warna,
-        borderRadius: BorderRadius.circular(20),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: p.onTap,
-          child: Stack(fit: StackFit.expand, children: [
-            // foto di sisi kanan; bila berkas belum ada, tampil ikon besar
-            Positioned(
-              right: 0,
-              top: 0,
-              bottom: 0,
-              width: 150,
-              child: Image.asset(
+  Widget build(BuildContext context) => Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [BoxShadow(color: p.warna.withOpacity(.35), blurRadius: 14, offset: const Offset(0, 6))],
+        ),
+        child: Material(
+          color: p.warna,
+          borderRadius: BorderRadius.circular(20),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: p.onTap,
+            child: Stack(fit: StackFit.expand, children: [
+              // foto memenuhi banner; bila berkas belum ada, tampil ikon besar
+              Image.asset(
                 p.foto,
                 fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) => Align(
@@ -110,37 +111,48 @@ class _Kartu extends StatelessWidget {
                   ),
                 ),
               ),
-            ),
-            // gradasi supaya tulisan tetap terbaca di atas foto
-            DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [p.warna, p.warna, p.warna.withOpacity(0)],
-                  stops: const [0, .55, .85],
+              // bayangan hijau dari kiri supaya tulisan terbaca di atas foto
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [p.warna.withOpacity(.95), p.warna.withOpacity(.75), p.warna.withOpacity(.05)],
+                    stops: const [0, .45, 1],
+                  ),
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(18, 16, 120, 14),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(p.judul,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.poppins(color: Colors.white, fontSize: 15.5, fontWeight: FontWeight.w700, height: 1.25)),
-                const SizedBox(height: 4),
-                Text(p.isi,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: Colors.white, fontSize: 12, height: 1.35)),
-                const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
-                  child: Text(p.tombol, style: TextStyle(color: p.warna, fontSize: 12, fontWeight: FontWeight.w700)),
-                ),
-              ]),
-            ),
-          ]),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(18, 16, 90, 14),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(p.judul,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        height: 1.25,
+                        shadows: const [Shadow(color: Color(0x66000000), blurRadius: 6)],
+                      )),
+                  const SizedBox(height: 4),
+                  Text(p.isi,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        height: 1.35,
+                        shadows: [Shadow(color: Color(0x66000000), blurRadius: 4)],
+                      )),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
+                    child: Text(p.tombol, style: TextStyle(color: p.warna, fontSize: 12, fontWeight: FontWeight.w700)),
+                  ),
+                ]),
+              ),
+            ]),
+          ),
         ),
       );
 }
