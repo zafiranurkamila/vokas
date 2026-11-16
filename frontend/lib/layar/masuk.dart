@@ -308,6 +308,7 @@ class _LayarMasukState extends State<LayarMasuk> {
           if (!sudah) _ke(_Tahap.form);
         },
         child: Scaffold(
+          backgroundColor: Colors.white,
           body: SafeArea(
             child: Center(
               child: SingleChildScrollView(

@@ -142,11 +142,11 @@ class CatatanDemo extends StatelessWidget {
   Widget build(BuildContext context) => Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(color: Warna.khaki.withOpacity(.45), borderRadius: BorderRadius.circular(12)),
+        decoration: BoxDecoration(color: Warna.abu, borderRadius: BorderRadius.circular(12)),
         child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Icon(Icons.info_outline_rounded, size: 16, color: Warna.oliveTua),
+          const Icon(Icons.info_outline_rounded, size: 16, color: Warna.redup),
           const SizedBox(width: 8),
-          Expanded(child: Text(teks, style: const TextStyle(fontSize: 12, height: 1.45, color: Warna.oliveTua))),
+          Expanded(child: Text(teks, style: const TextStyle(fontSize: 12, height: 1.45, color: Warna.tinta))),
         ]),
       );
 }

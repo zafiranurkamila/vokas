@@ -14,6 +14,8 @@ class Warna {
   static const redup = Color(0xFF6B7A72);
   static const garis = Color(0xFFE3EBE6);
   static const merah = Color(0xFFB4533A);
+  /// abu netral untuk latar kotak info dan pilihan yang tidak aktif
+  static const abu = Color(0xFFF1F3F2);
 }
 
 ThemeData temaVokas() {
@@ -52,6 +54,15 @@ ThemeData temaVokas() {
         side: const BorderSide(color: Warna.olive),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         textStyle: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600),
+      ),
+    ),
+    // pilihan seperti Daftar/Masuk: netral, yang aktif putih dengan tulisan tebal
+    segmentedButtonTheme: SegmentedButtonThemeData(
+      style: ButtonStyle(
+        backgroundColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? Colors.white : Warna.abu),
+        foregroundColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? Warna.tinta : Warna.redup),
+        side: const WidgetStatePropertyAll(BorderSide(color: Warna.garis)),
+        textStyle: WidgetStatePropertyAll(GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600)),
       ),
     ),
     inputDecorationTheme: InputDecorationTheme(
