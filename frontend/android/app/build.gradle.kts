@@ -45,6 +45,12 @@ android {
         }
     }
 
+    // lint rilis dimatikan: lint plugin pihak ketiga (google_sign_in_android) bisa crash dan tidak memengaruhi APK
+    lint {
+        checkReleaseBuilds = false
+        abortOnError = false
+    }
+
     buildTypes {
         release {
             signingConfig = if (kunciRilis != null && file(kunciRilis).exists())
