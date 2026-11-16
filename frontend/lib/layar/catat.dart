@@ -12,6 +12,7 @@ import 'package:record/record.dart';
 import '../api.dart';
 import '../sesi.dart';
 import '../tema.dart';
+import '../widget/struk_digital.dart';
 
 /// Lembar bawah untuk mencatat: tekan mic lalu bicara, atau ketik / ketuk contoh kalimat.
 class LembarCatat extends StatefulWidget {
@@ -269,6 +270,14 @@ class _LembarCatatState extends State<LembarCatat> with SingleTickerProviderStat
                   minimumSize: const Size.fromHeight(44),
                 ),
               ),
+              if (((_hasil!['tersimpan'] as List?) ?? []).any((t) => t['jenis'] == 'MASUK')) ...[
+                const SizedBox(height: 8),
+                TextButton.icon(
+                  onPressed: () => bagikanStruk(((_hasil!['tersimpan'] as List?) ?? []).cast<Map<String, dynamic>>()),
+                  icon: const Icon(Icons.receipt_long_rounded, size: 18),
+                  label: const Text('Kirim struk ke pembeli'),
+                ),
+              ],
               const SizedBox(height: 16),
             ],
             if (!sibuk) ...[

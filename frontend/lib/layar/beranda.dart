@@ -12,6 +12,13 @@ import 'daftar_qris.dart';
 import 'tanya_ai.dart';
 import 'terima_qris.dart';
 import 'laporan.dart';
+import 'celengan.dart';
+import 'foto_nota.dart';
+import 'kasbon.dart';
+import 'riwayat_suara.dart';
+import 'saran_belanja.dart';
+import '../widget/pembaca_suara.dart';
+import '../widget/struk_digital.dart';
 import 'profil.dart';
 import 'rapor_kur.dart';
 
@@ -185,16 +192,41 @@ class TabBeranda extends StatefulWidget {
 
 class _TabBerandaState extends State<TabBeranda> {
   late Future<(Map<String, dynamic>, List<dynamic>, Map<String, dynamic>)> _data = _muat();
+  List<Map<String, dynamic>> _peringatan = [];
 
   Future<(Map<String, dynamic>, List<dynamic>, Map<String, dynamic>)> _muat() async {
     final id = Sesi.pedagangId!;
     final hari = tglIso(DateTime.now());
+    // peringatan dimuat terpisah: kalau gagal, beranda tetap tampil
+    _muatPeringatan(id);
     final r = await Future.wait([
       Api.laporan(id, dari: hari, sampai: hari),
       Api.transaksi(id),
       Api.raporKur(id),
     ]);
     return (r[0] as Map<String, dynamic>, r[1] as List<dynamic>, r[2] as Map<String, dynamic>);
+  }
+
+  Future<void> _muatPeringatan(String id) async {
+    try {
+      final p = await Api.peringatan(id);
+      if (mounted) setState(() => _peringatan = p.cast<Map<String, dynamic>>());
+    } catch (_) {}
+  }
+
+  @override
+  void dispose() {
+    PembacaSuara.berhenti();
+    super.dispose();
+  }
+
+  void _dengarkan(Map<String, dynamic> lap, Map<String, dynamic> kur) {
+    if (PembacaSuara.berbicara.value) {
+      PembacaSuara.berhenti();
+      return;
+    }
+    final nama = Sesi.nama.isEmpty ? 'Juragan' : Sesi.nama.split(' ').first;
+    PembacaSuara.bacakan(PembacaSuara.ringkasanHarian(nama: nama, laporan: lap, kur: kur, peringatan: _peringatan));
   }
 
   Future<void> _buka(Widget layar) async {
@@ -276,15 +308,24 @@ class _TabBerandaState extends State<TabBeranda> {
             return ListView(padding: paddingTab, children: [
               kepala,
               const SizedBox(height: 20),
-              _KartuUntung(lap, target: Sesi.targetHarian, aksi: [
+              _KartuUntung(lap, target: Sesi.targetHarian, onDengar: () => _dengarkan(lap, kur), aksi: [
                 _Aksi(Icons.auto_awesome_rounded, 'Tanya AI', () => _buka(const LayarTanyaAi())),
                 _Aksi(Icons.qr_code_2_rounded, 'Terima QRIS', () => _buka(const LayarTerimaQris())),
                 _Aksi(Icons.app_registration_rounded, 'Daftar QRIS', () => _buka(const LayarDaftarQris())),
                 _Aksi(Icons.calculate_outlined, 'Hitung KUR', () => _buka(const LayarHitungKur())),
                 _Aksi(Icons.flag_outlined, 'Target', _aturTarget),
+                _Aksi(Icons.history_rounded, 'Riwayat Suara', () => _buka(const LayarRiwayatSuara())),
+                _Aksi(Icons.document_scanner_outlined, 'Foto Nota', () => _buka(const LayarFotoNota())),
+                _Aksi(Icons.menu_book_outlined, 'Kasbon', () => _buka(const LayarKasbon())),
+                _Aksi(Icons.savings_outlined, 'Celengan', () => _buka(const LayarCelengan())),
+                _Aksi(Icons.shopping_basket_outlined, 'Saran Belanja', () => _buka(const LayarSaranBelanja())),
               ]),
               const SizedBox(height: 16),
               _BannerKur(kur, () => widget.keTab(2)),
+              for (final p in _peringatan.take(2)) ...[
+                const SizedBox(height: 10),
+                KartuPeringatan(p, onTap: () => _buka(const LayarSaranBelanja())),
+              ],
               if (Sesi.briTersambung != true) ...[
                 const SizedBox(height: 10),
                 _AjakSambung(() => widget.keTab(3)),
@@ -370,10 +411,11 @@ class _Aksi {
 }
 
 class _KartuUntung extends StatelessWidget {
-  const _KartuUntung(this.lap, {required this.aksi, this.target = 0});
+  const _KartuUntung(this.lap, {required this.aksi, this.target = 0, this.onDengar});
   final Map<String, dynamic> lap;
   final List<_Aksi> aksi;
   final int target;
+  final VoidCallback? onDengar;
 
   @override
   Widget build(BuildContext context) {
@@ -389,7 +431,27 @@ class _KartuUntung extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
           decoration: BoxDecoration(color: Warna.oliveTua, borderRadius: BorderRadius.circular(22)),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('Untung hari ini', style: TextStyle(color: Warna.khaki, fontSize: 13)),
+            Row(children: [
+              const Expanded(child: Text('Untung hari ini', style: TextStyle(color: Warna.khaki, fontSize: 13))),
+              if (onDengar != null)
+                ValueListenableBuilder<bool>(
+                  valueListenable: PembacaSuara.berbicara,
+                  builder: (_, bicara, __) => InkWell(
+                    onTap: onDengar,
+                    borderRadius: BorderRadius.circular(20),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(color: Colors.white.withOpacity(.14), borderRadius: BorderRadius.circular(20)),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        Icon(bicara ? Icons.stop_rounded : Icons.volume_up_rounded, size: 16, color: Warna.matahari),
+                        const SizedBox(width: 4),
+                        Text(bicara ? 'Berhenti' : 'Dengarkan',
+                            style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+                      ]),
+                    ),
+                  ),
+                ),
+            ]),
             const SizedBox(height: 2),
             Text(rp(laba), style: GoogleFonts.poppins(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w700)),
             const SizedBox(height: 12),
@@ -629,8 +691,17 @@ class BarisTransaksi extends StatelessWidget {
           if (onHapus != null)
             PopupMenuButton<String>(
               icon: const Icon(Icons.more_vert_rounded, size: 18, color: Warna.redup),
-              onSelected: (_) => onHapus!(),
-              itemBuilder: (_) => const [PopupMenuItem(value: 'hapus', child: Text('Hapus'))],
+              onSelected: (v) {
+                if (v == 'struk') {
+                  bagikanStruk([t]);
+                } else {
+                  onHapus!();
+                }
+              },
+              itemBuilder: (_) => [
+                if (masuk) const PopupMenuItem(value: 'struk', child: Text('Kirim struk ke pembeli')),
+                const PopupMenuItem(value: 'hapus', child: Text('Hapus')),
+              ],
             )
           else
             const SizedBox(width: 10),
