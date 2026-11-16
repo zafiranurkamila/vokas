@@ -19,7 +19,54 @@ final _langkah = [
       'Pembayaran QRIS masuk sendiri. Transfer tinggal kamu tandai: uang usaha atau bukan.', (a) => _IlustrasiQris(a)),
   _Langkah('Catatan rapi jadi\nRapor Kesiapan KUR',
       'Bawa rapornya saat mengajukan KUR ke BRI, tanpa repot menyusun laporan.', (a) => _IlustrasiKur(a)),
+  _Langkah('Asisten usaha\ndalam satu aplikasi',
+      'Foto nota belanja, catat kasbon pelanggan, sisihkan untung ke celengan, dan dapat saran belanja untuk besok.',
+      (a) => _IlustrasiFitur(a)),
 ];
+
+/// Langkah 4: kotak-kotak fitur baru muncul satu per satu.
+class _IlustrasiFitur extends StatelessWidget {
+  const _IlustrasiFitur(this.a);
+  final Animation<double> a;
+
+  static const _fitur = [
+    (Icons.document_scanner_outlined, 'Foto Nota', 'AI baca nota belanja'),
+    (Icons.menu_book_outlined, 'Kasbon', '"Bu Ani ngutang 20rb"'),
+    (Icons.savings_outlined, 'Celengan', 'Sisihkan untuk cicilan'),
+    (Icons.shopping_basket_outlined, 'Saran Belanja', 'Siapkan stok besok'),
+  ];
+
+  @override
+  Widget build(BuildContext context) => GridView.count(
+        crossAxisCount: 2,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        mainAxisSpacing: 12,
+        crossAxisSpacing: 12,
+        childAspectRatio: 1.15,
+        children: [
+          for (var i = 0; i < _fitur.length; i++)
+            Muncul(
+              _iv(a, .1 + i * .15, .45 + i * .15),
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: _kotak(),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(color: Warna.khaki, borderRadius: BorderRadius.circular(12)),
+                    child: Icon(_fitur[i].$1, color: Warna.oliveTua),
+                  ),
+                  const Spacer(),
+                  Text(_fitur[i].$2, style: const TextStyle(fontWeight: FontWeight.w600)),
+                  Text(_fitur[i].$3, style: const TextStyle(fontSize: 11.5, color: Warna.redup)),
+                ]),
+              ),
+            ),
+        ],
+      );
+}
 
 class LayarIntro extends StatefulWidget {
   const LayarIntro({super.key});

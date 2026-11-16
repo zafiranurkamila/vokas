@@ -22,6 +22,10 @@ class Sesi {
   static bool get sudahTur => _p.getBool('sudahTur') ?? false;
   static Future<void> selesaiTur() => _p.setBool('sudahTur', true);
 
+  /// Perkenalan fitur baru (kasbon, celengan, dst.) untuk pengguna lama yang sudah pernah ikut tur awal.
+  static bool get sudahTurFiturBaru => _p.getBool('sudahTurFitur2') ?? false;
+  static Future<void> selesaiTurFiturBaru() => _p.setBool('sudahTurFitur2', true);
+
   static String? get pedagangId => _p.getString('pedagangId');
   static String get nama => _p.getString('nama') ?? '';
   static String get namaUsaha => _p.getString('namaUsaha') ?? '';

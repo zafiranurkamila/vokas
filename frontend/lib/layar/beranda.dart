@@ -54,27 +54,64 @@ class _BerandaState extends State<Beranda> {
       if (mounted) setState(() => _versi++);
     };
     n.mulaiSimulasi();
-    if (!Sesi.sudahTur) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => Future.delayed(const Duration(milliseconds: 500), _mulaiTur));
+    if (!Sesi.sudahTur || !Sesi.sudahTurFiturBaru) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _tungguLaluTur(0));
     }
   }
+
+  /// Tombol fitur baru baru muncul setelah data beranda termuat (server gratis bisa lambat bangun),
+  /// jadi tur menunggu sampai tombolnya ada di layar, paling lama sekitar 30 detik.
+  void _tungguLaluTur(int coba) {
+    if (!mounted) return;
+    final siap = _kunciFitur['Kasbon']!.currentContext != null;
+    if (!siap && coba < 40) {
+      Future.delayed(const Duration(milliseconds: 750), () => _tungguLaluTur(coba + 1));
+      return;
+    }
+    if (_tab != 0) return;
+    Future.delayed(const Duration(milliseconds: 400), Sesi.sudahTur ? _turFiturBaru : _mulaiTur);
+  }
+
+  static const _penjelasanFitur = [
+    ('Riwayat Suara', 'Riwayat voice note',
+        'Semua voice note tersimpan. Putar ulang rekamannya, lengkap dengan tulisan hasil dengarnya di bawah.'),
+    ('Foto Nota', 'Foto nota belanja',
+        'Habis belanja ke pemasok? Foto notanya, AI membaca barang dan harganya lalu mencatat sebagai pengeluaran.'),
+    ('Kasbon', 'Kasbon pelanggan',
+        'Bilang "Bu Ani ngutang 20 ribu", langsung tercatat. Tagih lewat WhatsApp, tandai lunas jadi uang masuk.'),
+    ('Celengan', 'Celengan cicilan KUR',
+        'Pasang target, VoKas menghitung berapa persen untung harian yang bisa disisihkan dan kapan tercapai.'),
+    ('Saran Belanja', 'Saran belanja besok',
+        'Dari pola jualan 4 minggu, VoKas memperkirakan omzet besok dan berapa stok yang perlu disiapkan.'),
+  ];
+
+  List<LangkahTur> _langkahFiturBaru() => [
+        for (final (k, judul, isi) in _penjelasanFitur) LangkahTur(kunci: _kunciFitur[k], judul: judul, isi: isi),
+        LangkahTur(
+          kunci: _kunciDengar,
+          judul: 'Laporan dibacakan',
+          isi: 'Sibuk melayani pembeli? Tekan "Dengarkan", VoKas membacakan untung dan ringkasan hari ini.',
+        ),
+      ];
 
   void _mulaiTur() {
     if (!mounted) return;
     tampilkanTur(context, [
       const LangkahTur(
         judul: 'Selamat datang di VoKas',
-        isi: 'Kenalan sebentar dengan fitur utamanya. Cuma 4 langkah.',
+        isi: 'Kenalan sebentar dengan fitur-fiturnya. Ketuk Lanjut atau Lewati kapan saja.',
       ),
       LangkahTur(
         kunci: _kunciMic,
         judul: 'Catat lewat suara',
-        isi: 'Tekan mic lalu bicara, misalnya "jual cilok tiga puluh bungkus dua ribuan". Bisa juga diketik.',
+        isi: 'Tekan mic lalu bicara, misalnya "jual cilok tiga puluh bungkus dua ribuan". Bisa juga diketik. '
+            'Salah ngomong? Buang rekamannya atau batalkan catatannya.',
       ),
+      ..._langkahFiturBaru(),
       LangkahTur(
         kunci: _kunciLaporan,
         judul: 'Laporan otomatis',
-        isi: 'Omzet, pengeluaran, laba, dan barang paling laku tersusun sendiri per 7 atau 30 hari.',
+        isi: 'Omzet, pengeluaran, laba, dan barang paling laku tersusun sendiri. Unduh PDF/Excel atau kirim ke email.',
       ),
       LangkahTur(
         kunci: _kunciKur,
@@ -86,7 +123,22 @@ class _BerandaState extends State<Beranda> {
         judul: 'Profil & rekening BRI',
         isi: 'Sambungkan rekening BRI supaya QRIS tercatat sendiri. Di sini juga ada data contoh untuk mencoba.',
       ),
-    ], onSelesai: Sesi.selesaiTur);
+    ], onSelesai: () {
+      Sesi.selesaiTur();
+      Sesi.selesaiTurFiturBaru();
+    });
+  }
+
+  /// Pengguna lama: hanya perkenalan fitur yang baru ditambahkan.
+  void _turFiturBaru() {
+    if (!mounted) return;
+    tampilkanTur(context, [
+      const LangkahTur(
+        judul: 'Ada fitur baru! 🎉',
+        isi: 'VoKas sekarang bisa membaca foto nota, mencatat kasbon, menabung untuk cicilan KUR, dan memberi saran belanja.',
+      ),
+      ..._langkahFiturBaru(),
+    ], onSelesai: Sesi.selesaiTurFiturBaru);
   }
 
   Future<void> _catat() async {
@@ -403,6 +455,12 @@ class Avatar extends StatelessWidget {
   }
 }
 
+/// Penanda tombol fitur baru dan tombol "Dengarkan", supaya tur perkenalan bisa menyorotnya.
+final _kunciFitur = {
+  for (final k in ['Riwayat Suara', 'Foto Nota', 'Kasbon', 'Celengan', 'Saran Belanja']) k: GlobalKey(),
+};
+final _kunciDengar = GlobalKey();
+
 class _Aksi {
   const _Aksi(this.ikon, this.label, this.onTap);
   final IconData ikon;
@@ -437,6 +495,7 @@ class _KartuUntung extends StatelessWidget {
                 ValueListenableBuilder<bool>(
                   valueListenable: PembacaSuara.berbicara,
                   builder: (_, bicara, __) => InkWell(
+                    key: _kunciDengar,
                     onTap: onDengar,
                     borderRadius: BorderRadius.circular(20),
                     child: Container(
@@ -507,6 +566,7 @@ class _TombolAksi extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => InkWell(
+        key: _kunciFitur[a.label],
         onTap: a.onTap,
         borderRadius: BorderRadius.circular(14),
         child: Padding(
