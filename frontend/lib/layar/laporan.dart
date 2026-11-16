@@ -7,6 +7,7 @@ import '../api.dart';
 import '../sesi.dart';
 import '../tema.dart';
 import 'beranda.dart';
+import '../widget/kartu_ekspor.dart';
 
 class TabLaporan extends StatefulWidget {
   const TabLaporan({super.key, required this.onDataBerubah});
@@ -108,6 +109,14 @@ class _TabLaporanState extends State<TabLaporan> {
                   : Column(children: [
                       for (final t in terlaris) _BarisTerlaris(t, (terlaris.first['total'] as num).toDouble()),
                     ]),
+            ),
+            const SizedBox(height: 20),
+            Text('Unduh & kirim laporan', style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            KartuEkspor(
+              dari: tglIso(DateTime.now().subtract(Duration(days: _hari - 1))),
+              sampai: tglIso(DateTime.now()),
+              label: '$_hari hari terakhir',
             ),
           ]);
         },

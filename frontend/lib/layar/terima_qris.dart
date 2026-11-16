@@ -5,6 +5,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import '../notif.dart';
 import '../sesi.dart';
 import '../tema.dart';
+import 'daftar_qris.dart';
 
 /// Layar "Terima QRIS" untuk ditunjukkan ke pembeli.
 /// Demo: kode QR berisi teks contoh (bukan kode QRIS asli) dan pembayaran disimulasikan.
@@ -97,6 +98,12 @@ class _LayarTerimaQrisState extends State<LayarTerimaQris> {
                 'Uang masuk langsung tercatat sebagai penjualan, lalu muncul notifikasi dengan bunyi ceting.',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 12, color: Warna.redup, height: 1.5),
+              ),
+              const SizedBox(height: 16),
+              OutlinedButton.icon(
+                onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LayarDaftarQris())),
+                icon: const Icon(Icons.app_registration_rounded, color: Warna.qris),
+                label: const Text('Belum punya QRIS BRI? Daftar di sini'),
               ),
             ]),
           ),

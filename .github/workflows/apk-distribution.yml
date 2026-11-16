@@ -41,12 +41,26 @@ jobs:
       - name: Ikon aplikasi
         run: dart run flutter_launcher_icons
 
+      - name: Kunci penanda tangan APK (tetap)
+        env:
+          KUNCI: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KUNCI" ]; then
+            echo "$KUNCI" | base64 -d > "$RUNNER_TEMP/vokas-rilis.jks"
+            echo "VOKAS_KEYSTORE=$RUNNER_TEMP/vokas-rilis.jks" >> "$GITHUB_ENV"
+          else
+            echo "ANDROID_KEYSTORE_BASE64 belum diisi: APK memakai kunci debug"
+          fi
+
       - name: Build APK
+        env:
+          VOKAS_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
         run: >
           flutter build apk --release
           --build-number=${{ github.run_number }}
           --dart-define=API_URL=${{ vars.API_URL || 'https://vokas-backend.onrender.com' }}
           --dart-define=API_KEY=${{ secrets.VOKAS_API_KEY }}
+          --dart-define=GOOGLE_CLIENT_ID=${{ vars.GOOGLE_CLIENT_ID }}
 
       - name: Simpan service account ke file sementara
         run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_VOKAS_4E7CC }}' > "$RUNNER_TEMP/sa.json"

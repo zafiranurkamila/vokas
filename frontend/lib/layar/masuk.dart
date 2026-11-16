@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../api.dart';
 import '../main.dart';
+import '../masuk_google.dart';
 import '../sesi.dart';
 import '../tema.dart';
 import '../widget/papan_pin.dart';
@@ -17,12 +18,17 @@ String? normalisasiWa(String s) {
   return RegExp(r'^62\d{8,13}$').hasMatch(d) ? d : null;
 }
 
+bool emailValid(String s) => RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(s.trim());
+
+/// Kode demo untuk akun lama yang belum punya email (OTP WhatsApp belum aktif).
 const kodeDemo = '123456';
 
-enum _Tahap { form, otp, buatPin, ulangPin, pin }
+enum _Tahap { form, kode, buatPin, ulangPin, pin, lupaKode, lupaBuat, lupaUlang }
 
-/// Alur auth versi demo: data -> OTP WhatsApp -> buat PIN (daftar) atau nomor -> PIN (masuk).
-/// Versi resmi: OTP dikirim lewat WhatsApp Cloud API, PIN di-hash di server, sesi memakai Supabase Auth (JWT).
+/// Auth VoKas:
+/// - Daftar: data usaha + nomor WA + email -> kode dari email -> buat PIN. Atau daftar dengan Google (tanpa kode).
+/// - Masuk: email ATAU nomor WA -> PIN (dicek di server, berlaku di HP mana pun).
+/// - Lupa PIN: kode dikirim ke email terdaftar (atau Google) -> PIN baru.
 class LayarMasuk extends StatefulWidget {
   const LayarMasuk({super.key});
 
@@ -40,10 +46,15 @@ class _LayarMasukState extends State<LayarMasuk> {
   final _nama = TextEditingController();
   final _usaha = TextEditingController();
   final _wa = TextEditingController();
+  final _email = TextEditingController();
+  final _identitas = TextEditingController();
 
   String _noWa = '';
-  Map<String, dynamic>? _pedagang;
+  String _kode = '';
   String _pinBaru = '';
+  String _emailSamar = '';
+  bool _lupaDemo = false;
+  ({String? idToken, String? accessToken})? _google;
   bool _lewatBri = false; // true bila daftar/masuk lewat "Lanjut dengan BRImo"
 
   void _pesan(String s) => tampilPesan(context, s);
@@ -60,64 +71,68 @@ class _LayarMasukState extends State<LayarMasuk> {
     });
   }
 
-  // ---------------- tahap 1: formulir ----------------
-
-  Future<void> _kirimForm() async {
-    if (!_form.currentState!.validate()) return;
+  Future<T?> _jalankan<T>(Future<T> Function() f) async {
     setState(() => _sibuk = true);
-    _noWa = normalisasiWa(_wa.text)!;
     try {
-      final ada = await _cari(_noWa);
-      if (_daftar && ada != null) {
-        // nomor sudah terdaftar: langsung arahkan ke masuk
-        _daftar = false;
-        _pesan('Nomor ini sudah terdaftar. Masuk dengan PIN-mu.');
-      }
-      if (!_daftar && ada == null) {
-        _pesan('Nomor belum terdaftar. Pilih "Daftar" dulu.');
-        return;
-      }
-      _pedagang = ada;
-      _ke(!_daftar && Sesi.punyaPin(_noWa) ? _Tahap.pin : _Tahap.otp);
-    } catch (e) {
-      _pesan(pesanGalat(e));
+      return await f();
     } finally {
       if (mounted) setState(() => _sibuk = false);
     }
   }
 
-  Future<Map<String, dynamic>?> _cari(String wa) async {
-    try {
-      return await Api.masuk(wa);
-    } on ApiGagal catch (e) {
-      if (e.status == 404) return null;
-      rethrow;
+  String get _identitasTampil {
+    final s = _identitas.text.trim();
+    if (s.contains('@')) {
+      final at = s.indexOf('@');
+      return at <= 1 ? s : '${s[0]}${'*' * (at - 1).clamp(1, 5).toInt()}${s.substring(at)}';
     }
+    return samarkanWa(normalisasiWa(s) ?? s);
   }
 
-  // ---------------- tahap 2: OTP ----------------
+  // ---------------- formulir ----------------
 
-  Future<void> _otpMasuk(String kode) async {
-    if (kode != kodeDemo) {
-      _gagal();
-      return;
-    }
-    if (_pedagang == null) {
-      setState(() => _sibuk = true);
+  Future<void> _kirimForm() async {
+    if (!_form.currentState!.validate()) return;
+    if (_daftar) {
+      _noWa = normalisasiWa(_wa.text)!;
+      if (_google != null) {
+        _ke(_Tahap.buatPin); // email sudah dibuktikan lewat Google
+        return;
+      }
       try {
-        _pedagang = await Api.daftar(nama: _nama.text.trim(), namaUsaha: _usaha.text.trim(), noWa: _noWa);
+        final r = await _jalankan(() => Api.kirimKode(_email.text.trim(), 'DAFTAR'));
+        _emailSamar = '${r?['email'] ?? _email.text.trim()}';
+        _ke(_Tahap.kode);
       } catch (e) {
         _pesan(pesanGalat(e));
-        _ke(_Tahap.form);
-        return;
-      } finally {
-        if (mounted) setState(() => _sibuk = false);
       }
+    } else {
+      _salahPin = 0;
+      _ke(_Tahap.pin);
     }
-    _ke(_Tahap.buatPin);
   }
 
-  // ---------------- tahap 3: PIN ----------------
+  // ---------------- kode dari email ----------------
+
+  void _kodeDiisi(String kode) {
+    _kode = kode;
+    _ke(_tahap == _Tahap.kode ? _Tahap.buatPin : _Tahap.lupaBuat);
+  }
+
+  Future<void> _kirimUlangKode() async {
+    try {
+      if (_tahap == _Tahap.kode) {
+        await Api.kirimKode(_email.text.trim(), 'DAFTAR');
+      } else {
+        await Api.kirimKode(_identitas.text.trim(), 'LUPA_PIN');
+      }
+      _pesan('Kode baru sudah dikirim ke email.');
+    } catch (e) {
+      _pesan(pesanGalat(e));
+    }
+  }
+
+  // ---------------- PIN ----------------
 
   void _pinDibuat(String pin) {
     if (RegExp(r'^(\d)\1{5}$').hasMatch(pin) || '0123456789'.contains(pin) || '9876543210'.contains(pin)) {
@@ -126,38 +141,150 @@ class _LayarMasukState extends State<LayarMasuk> {
       return;
     }
     _pinBaru = pin;
-    _ke(_Tahap.ulangPin);
+    _ke(_tahap == _Tahap.buatPin ? _Tahap.ulangPin : _Tahap.lupaUlang);
   }
 
   Future<void> _pinDiulang(String pin) async {
+    final lupa = _tahap == _Tahap.lupaUlang;
     if (pin != _pinBaru) {
       _gagal();
       _pesan('PIN tidak sama. Buat ulang PIN-mu.');
-      Future.delayed(const Duration(milliseconds: 500), () => _ke(_Tahap.buatPin));
+      Future.delayed(const Duration(milliseconds: 500), () => _ke(lupa ? _Tahap.lupaBuat : _Tahap.buatPin));
       return;
     }
-    await Sesi.simpanPin(_noWa, pin);
-    await _selesai();
+    if (lupa) {
+      await _aturPinBaru(pin);
+    } else {
+      await _daftarAkun(pin);
+    }
+  }
+
+  Future<void> _daftarAkun(String pin) async {
+    try {
+      final p = await _jalankan(() => Api.daftarAkun(
+            nama: _nama.text.trim(),
+            namaUsaha: _usaha.text.trim(),
+            noWa: _noWa,
+            email: _google == null ? _email.text.trim() : null,
+            kode: _google == null ? _kode : null,
+            googleIdToken: _google?.idToken,
+            googleAccessToken: _google?.accessToken,
+            pin: pin,
+          ));
+      await _selesai(p!, pin);
+    } on ApiGagal catch (e) {
+      _pesan(e.pesan);
+      _ke(e.pesan.startsWith('Kode') ? _Tahap.kode : _Tahap.form);
+    } catch (e) {
+      _pesan(pesanGalat(e));
+      _ke(_Tahap.form);
+    }
   }
 
   Future<void> _pinMasuk(String pin) async {
-    if (!Sesi.cekPin(_noWa, pin)) {
-      _salahPin++;
-      _gagal();
-      if (_salahPin >= 3) _pesan('PIN salah 3 kali. Pakai "Lupa PIN?" untuk atur ulang lewat OTP.');
-      return;
+    try {
+      final p = await _jalankan(() => Api.masukAkun(_identitas.text.trim(), pin));
+      await _selesai(p!, pin);
+    } on ApiGagal catch (e) {
+      if (e.status == 401) {
+        _salahPin++;
+        _gagal();
+        _pesan(_salahPin >= 3 ? 'PIN salah. Lupa PIN? Atur ulang lewat email.' : 'PIN salah.');
+      } else if (e.pesan == 'PIN_BELUM_ADA') {
+        _pesan('Akun ini belum punya PIN. Buat PIN dulu.');
+        await _mulaiLupa();
+      } else {
+        _pesan(e.pesan);
+        if (e.status == 404) _ke(_Tahap.form);
+      }
+    } catch (e) {
+      _pesan(pesanGalat(e));
     }
-    await _selesai();
   }
 
-  Future<void> _selesai() async {
-    await Sesi.simpanPedagang(_pedagang!);
-    // pemilik rekening = pemilik akun yang benar-benar masuk (bisa akun lama bila nomornya sudah terdaftar)
-    if (_lewatBri) await Sesi.simpanRekening('4521', '${_pedagang!['nama'] ?? ''}'.toUpperCase());
+  // ---------------- lupa PIN ----------------
+
+  Future<void> _mulaiLupa() async {
+    if (_google != null) {
+      _ke(_Tahap.lupaBuat); // kepemilikan akun sudah dibuktikan lewat Google
+      return;
+    }
+    try {
+      final r = await _jalankan(() => Api.kirimKode(_identitas.text.trim(), 'LUPA_PIN'));
+      _emailSamar = '${r?['email'] ?? ''}';
+      _lupaDemo = false;
+      _ke(_Tahap.lupaKode);
+    } on ApiGagal catch (e) {
+      if (e.pesan == 'AKUN_TANPA_EMAIL') {
+        _lupaDemo = true;
+        _ke(_Tahap.lupaKode);
+      } else {
+        _pesan(e.pesan);
+      }
+    } catch (e) {
+      _pesan(pesanGalat(e));
+    }
+  }
+
+  Future<void> _aturPinBaru(String pin) async {
+    try {
+      final p = await _jalankan(() => Api.lupaPin(_identitas.text.trim(), pin,
+          kode: _google == null ? _kode : null, googleIdToken: _google?.idToken, googleAccessToken: _google?.accessToken));
+      _pesan('PIN baru tersimpan.');
+      await _selesai(p!, pin);
+    } on ApiGagal catch (e) {
+      _pesan(e.pesan);
+      _ke(e.pesan.startsWith('Kode') ? _Tahap.lupaKode : _Tahap.form);
+    } catch (e) {
+      _pesan(pesanGalat(e));
+      _ke(_Tahap.form);
+    }
+  }
+
+  Future<void> _selesai(Map<String, dynamic> p, String pin) async {
+    await Sesi.simpanPedagang(p);
+    // salinan PIN di perangkat untuk konfirmasi cepat di dalam aplikasi (keluar, hapus data, dsb.)
+    await Sesi.simpanPin('${p['noWa']}', pin);
+    if (_lewatBri) await Sesi.simpanRekening('4521', '${p['nama'] ?? ''}'.toUpperCase());
     if (mounted) lanjut(context);
   }
 
-  // ---------------- masuk dengan BRImo / Google (simulasi) ----------------
+  // ---------------- Google / BRImo ----------------
+
+  Future<void> _lewatGoogle() async {
+    if (!MasukGoogle.tersedia) {
+      _pesan('Login Google belum diaktifkan di versi ini. Pakai email atau nomor WhatsApp dulu.');
+      return;
+    }
+    try {
+      final t = await _jalankan(MasukGoogle.pilihAkun);
+      if (t == null) return;
+      final r = await _jalankan(() => Api.masukGoogle(t.idToken, t.accessToken));
+      _google = t;
+      if (r?['terdaftar'] == true) {
+        final p = (r!['pedagang'] as Map).cast<String, dynamic>();
+        _identitas.text = '${p['email'] ?? p['noWa']}';
+        setState(() => _daftar = false);
+        if (p['punyaPin'] == true) {
+          _salahPin = 0;
+          _ke(_Tahap.pin);
+        } else {
+          _pesan('Buat PIN untuk akunmu.');
+          _ke(_Tahap.lupaBuat);
+        }
+      } else {
+        setState(() {
+          _daftar = true;
+          _email.text = '${r?['email'] ?? ''}';
+          if (_nama.text.trim().isEmpty) _nama.text = '${r?['nama'] ?? ''}';
+        });
+        _pesan('Akun Google tersambung. Lengkapi nama usaha dan nomor WhatsApp.');
+      }
+    } catch (e) {
+      _google = null;
+      _pesan(pesanGalat(e));
+    }
+  }
 
   Future<void> _lewatBrimo() async {
     final ok = await showModalBottomSheet<bool>(
@@ -170,21 +297,6 @@ class _LayarMasukState extends State<LayarMasuk> {
     if (ok != true) return;
     setState(() => _lewatBri = true);
     _pesan('Izin BRI diberikan (simulasi). Lengkapi data lalu lanjutkan.');
-  }
-
-  Future<void> _lewatGoogle() async {
-    final nama = await showModalBottomSheet<String>(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (_) => _LembarGoogle(nama: _nama.text.trim()),
-    );
-    if (nama == null) return;
-    setState(() {
-      _daftar = true;
-      if (nama.isNotEmpty) _nama.text = nama;
-    });
-    _pesan('Nama terisi dari akun Google (simulasi). Lengkapi nomor WhatsApp.');
   }
 
   // ---------------- tampilan ----------------
@@ -220,19 +332,17 @@ class _LayarMasukState extends State<LayarMasuk> {
 
   Widget _isi() => switch (_tahap) {
         _Tahap.form => _formulir(),
-        _Tahap.otp => _layarKode(
-            judul: 'Masukkan kode verifikasi',
-            sub: 'Kode 6 digit dikirim lewat WhatsApp ke ${samarkanWa(_noWa)}.',
-            demo: 'Mode demo: pakai kode $kodeDemo. Versi resmi mengirim kode lewat WhatsApp Cloud API '
-                'dan kode berlaku 5 menit.',
+        _Tahap.kode => _layarKode(
+            judul: 'Cek email kamu',
+            sub: 'Kode 6 angka dikirim ke $_emailSamar. Cek juga folder Spam atau Promosi.',
             sembunyi: false,
-            onSelesai: _otpMasuk,
-            bawah: _KirimUlang(onKirim: () => _pesan('Kode baru dikirim (simulasi). Kode demo: $kodeDemo')),
+            onSelesai: _kodeDiisi,
+            bawah: _KirimUlang(onKirim: _kirimUlangKode),
           ),
         _Tahap.buatPin => _layarKode(
             judul: 'Buat PIN VoKas',
-            sub: '6 angka untuk membuka aplikasi. Jangan pakai tanggal lahir atau angka berurutan.',
-            demo: 'PIN ini khusus VoKas, bukan PIN BRImo atau ATM. Versi resmi menyimpan PIN ter-hash di server.',
+            sub: '6 angka untuk masuk ke VoKas. Jangan pakai tanggal lahir atau angka berurutan.',
+            demo: 'PIN ini khusus VoKas, bukan PIN BRImo atau ATM. PIN disimpan dalam bentuk hash di server.',
             sembunyi: true,
             onSelesai: _pinDibuat,
           ),
@@ -244,10 +354,32 @@ class _LayarMasukState extends State<LayarMasuk> {
           ),
         _Tahap.pin => _layarKode(
             judul: 'Masukkan PIN',
-            sub: 'Masuk sebagai ${samarkanWa(_noWa)}',
+            sub: 'Masuk sebagai $_identitasTampil',
             sembunyi: true,
             onSelesai: _pinMasuk,
-            bawah: TextButton(onPressed: () => _ke(_Tahap.otp), child: const Text('Lupa PIN?')),
+            bawah: TextButton(onPressed: _sibuk ? null : _mulaiLupa, child: const Text('Lupa PIN?')),
+          ),
+        _Tahap.lupaKode => _layarKode(
+            judul: 'Atur ulang PIN',
+            sub: _lupaDemo
+                ? 'Akun ini belum punya email. Mode demo: masukkan kode $kodeDemo.'
+                : 'Kode 6 angka dikirim ke $_emailSamar. Cek juga folder Spam.',
+            demo: _lupaDemo ? 'Setelah masuk, tambahkan email di menu Laporan supaya lupa PIN bisa lewat email.' : null,
+            sembunyi: false,
+            onSelesai: _kodeDiisi,
+            bawah: _lupaDemo ? null : _KirimUlang(onKirim: _kirimUlangKode),
+          ),
+        _Tahap.lupaBuat => _layarKode(
+            judul: 'Buat PIN baru',
+            sub: '6 angka. Hindari angka sama atau berurutan.',
+            sembunyi: true,
+            onSelesai: _pinDibuat,
+          ),
+        _Tahap.lupaUlang => _layarKode(
+            judul: 'Ulangi PIN baru',
+            sub: 'Masukkan sekali lagi untuk konfirmasi.',
+            sembunyi: true,
+            onSelesai: _pinDiulang,
           ),
       };
 
@@ -291,9 +423,7 @@ class _LayarMasukState extends State<LayarMasuk> {
               textAlign: TextAlign.center, style: GoogleFonts.poppins(fontSize: 23, fontWeight: FontWeight.w700)),
           const SizedBox(height: 4),
           Text(
-              _daftar
-                  ? 'Pakai nomor WhatsApp yang dipakai untuk kirim catatan.'
-                  : 'Masuk dengan nomor WhatsApp dan PIN-mu.',
+              _daftar ? 'Kode verifikasi dikirim ke email kamu.' : 'Masuk dengan email atau nomor WhatsApp, lalu PIN.',
               textAlign: TextAlign.center,
               style: const TextStyle(color: Warna.redup, fontSize: 13.5)),
           const SizedBox(height: 20),
@@ -322,15 +452,41 @@ class _LayarMasukState extends State<LayarMasuk> {
                   labelText: 'Nama usaha', hintText: 'Cilok & Cireng Bu Sri', prefixIcon: Icon(Icons.storefront_outlined)),
             ),
             const SizedBox(height: 12),
-          ],
-          TextFormField(
-            controller: _wa,
-            keyboardType: TextInputType.phone,
-            inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9+\- ]'))],
-            decoration: const InputDecoration(
-                labelText: 'Nomor WhatsApp', hintText: '0812xxxxxxx', prefixIcon: Icon(Icons.phone_outlined)),
-            validator: (v) => normalisasiWa(v ?? '') == null ? 'Nomor WhatsApp tidak valid' : null,
-          ),
+            TextFormField(
+              controller: _wa,
+              keyboardType: TextInputType.phone,
+              inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9+\- ]'))],
+              decoration: const InputDecoration(
+                  labelText: 'Nomor WhatsApp', hintText: '0812xxxxxxx', prefixIcon: Icon(Icons.phone_outlined)),
+              validator: (v) => normalisasiWa(v ?? '') == null ? 'Nomor WhatsApp tidak valid' : null,
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _email,
+              readOnly: _google != null,
+              keyboardType: TextInputType.emailAddress,
+              decoration: InputDecoration(
+                labelText: 'Email',
+                hintText: 'nama@gmail.com',
+                prefixIcon: const Icon(Icons.mail_outline_rounded),
+                suffixIcon: _google != null ? const Icon(Icons.verified_rounded, color: Warna.olive) : null,
+                helperText: _google != null ? 'Terverifikasi lewat Google' : 'Untuk kode verifikasi, lupa PIN, dan laporan',
+              ),
+              validator: (v) => emailValid(v ?? '') ? null : 'Email tidak valid',
+            ),
+          ] else
+            TextFormField(
+              controller: _identitas,
+              keyboardType: TextInputType.emailAddress,
+              decoration: const InputDecoration(
+                  labelText: 'Email atau nomor WhatsApp',
+                  hintText: 'nama@gmail.com / 0812xxxxxxx',
+                  prefixIcon: Icon(Icons.person_outline_rounded)),
+              validator: (v) {
+                final s = (v ?? '').trim();
+                return (s.contains('@') ? emailValid(s) : normalisasiWa(s) != null) ? null : 'Isi email atau nomor WhatsApp yang valid';
+              },
+            ),
           if (_lewatBri) ...[
             const SizedBox(height: 10),
             const Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -350,7 +506,7 @@ class _LayarMasukState extends State<LayarMasuk> {
             child: _sibuk
                 ? const SizedBox(
                     width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
-                : Text(_daftar ? 'Daftar' : 'Lanjut'),
+                : Text(_daftar ? (_google != null ? 'Lanjut buat PIN' : 'Kirim kode ke email') : 'Lanjut'),
           ),
           const SizedBox(height: 20),
           const Row(children: [
@@ -362,18 +518,7 @@ class _LayarMasukState extends State<LayarMasuk> {
           ]),
           const SizedBox(height: 16),
           _TombolSosial(
-            onTap: _lewatBrimo,
-            ikon: Container(
-              width: 26,
-              height: 26,
-              decoration: BoxDecoration(color: Warna.qris, borderRadius: BorderRadius.circular(7)),
-              child: const Icon(Icons.account_balance_rounded, color: Colors.white, size: 15),
-            ),
-            label: 'Lanjut dengan BRImo',
-          ),
-          const SizedBox(height: 10),
-          _TombolSosial(
-            onTap: _lewatGoogle,
+            onTap: _sibuk ? () {} : _lewatGoogle,
             ikon: Container(
               width: 26,
               height: 26,
@@ -383,6 +528,17 @@ class _LayarMasukState extends State<LayarMasuk> {
             ),
             label: 'Lanjut dengan Google',
           ),
+          const SizedBox(height: 10),
+          _TombolSosial(
+            onTap: _lewatBrimo,
+            ikon: Container(
+              width: 26,
+              height: 26,
+              decoration: BoxDecoration(color: Warna.qris, borderRadius: BorderRadius.circular(7)),
+              child: const Icon(Icons.account_balance_rounded, color: Colors.white, size: 15),
+            ),
+            label: 'Lanjut dengan BRImo',
+          ),
           const SizedBox(height: 18),
           const Text(
             'Dengan mendaftar, kamu menyetujui Syarat & Ketentuan dan Kebijakan Privasi VoKas.',
@@ -390,8 +546,8 @@ class _LayarMasukState extends State<LayarMasuk> {
             style: TextStyle(fontSize: 11.5, color: Warna.redup, height: 1.5),
           ),
           const SizedBox(height: 12),
-          const CatatanDemo('Mode demo: login BRImo dan Google masih simulasi. Versi resmi memakai Google Sign-In '
-              '(OAuth) dan penautan akun resmi lewat BRIAPI setelah ada kerja sama dengan BRI.'),
+          const CatatanDemo('Akun juri: 0812 0000 2026, PIN 202611 (data 90 hari sudah terisi). '
+              'Login BRImo masih simulasi sampai ada kerja sama penautan akun lewat BRIAPI.'),
         ]),
       );
 }
@@ -530,39 +686,6 @@ class _BarisData extends StatelessWidget {
         child: Row(children: [
           SizedBox(width: 90, child: Text(label, style: const TextStyle(color: Warna.redup, fontSize: 13))),
           Expanded(child: Text(nilai, style: const TextStyle(fontWeight: FontWeight.w600))),
-        ]),
-      );
-}
-
-/// Simulasi pemilih akun Google.
-class _LembarGoogle extends StatelessWidget {
-  const _LembarGoogle({required this.nama});
-  final String nama;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
-        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          const Text('Pilih akun', textAlign: TextAlign.center, style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
-          const Text('untuk melanjutkan ke VoKas',
-              textAlign: TextAlign.center, style: TextStyle(color: Warna.redup, fontSize: 13)),
-          const SizedBox(height: 16),
-          ListTile(
-            onTap: () => Navigator.of(context).pop(nama),
-            leading: CircleAvatar(
-                backgroundColor: Warna.khaki,
-                child: Text(nama.isEmpty ? 'V' : nama[0].toUpperCase(), style: const TextStyle(color: Warna.oliveTua))),
-            title: Text(nama.isEmpty ? 'Pengguna VoKas' : nama),
-            subtitle: const Text('akun.demo@gmail.com'),
-          ),
-          const Divider(color: Warna.garis),
-          ListTile(
-            onTap: () => Navigator.of(context).pop(''),
-            leading: const CircleAvatar(backgroundColor: Warna.latar, child: Icon(Icons.person_add_alt_1_outlined, color: Warna.redup)),
-            title: const Text('Gunakan akun lain'),
-          ),
-          const SizedBox(height: 8),
-          const CatatanDemo('Simulasi. Versi resmi memakai Google Sign-In, VoKas hanya menerima nama dan email.'),
         ]),
       );
 }

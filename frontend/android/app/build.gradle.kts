@@ -31,11 +31,24 @@ android {
         versionName = flutter.versionName
     }
 
+    // Kunci rilis tetap (dari GitHub secret) supaya SHA-1 tidak berubah: wajib untuk login Google di Android
+    // dan supaya APK baru bisa dipasang menimpa versi lama. Tanpa kunci ini, build memakai kunci debug.
+    val kunciRilis = System.getenv("VOKAS_KEYSTORE")
+    signingConfigs {
+        create("rilis") {
+            if (kunciRilis != null && file(kunciRilis).exists()) {
+                storeFile = file(kunciRilis)
+                storePassword = System.getenv("VOKAS_KEYSTORE_PASSWORD")
+                keyAlias = "vokas"
+                keyPassword = System.getenv("VOKAS_KEYSTORE_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = if (kunciRilis != null && file(kunciRilis).exists())
+                signingConfigs.getByName("rilis") else signingConfigs.getByName("debug")
         }
     }
 }

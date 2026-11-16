@@ -125,6 +125,92 @@ class Api {
       .post(_u('/api/ai/pedagang/$id/tanya'), headers: _header, body: jsonEncode({'pertanyaan': pertanyaan}))
       .timeout(const Duration(seconds: 90))));
 
+  // ---------------- auth (email / WA + PIN di server) ----------------
+
+  /// keperluan: 'DAFTAR' (identitas = email baru) atau 'LUPA_PIN' (identitas = email/WA terdaftar). Hasil: {email (disamarkan)}
+  static Future<Map<String, dynamic>> kirimKode(String identitas, String keperluan) async => _hasil(await _coba(() =>
+      http.post(_u('/api/auth/kode'), headers: _header, body: jsonEncode({'identitas': identitas, 'keperluan': keperluan}))));
+
+  static Future<Map<String, dynamic>> daftarAkun({
+    required String nama,
+    String? namaUsaha,
+    required String noWa,
+    String? email,
+    String? kode,
+    String? googleIdToken,
+    String? googleAccessToken,
+    required String pin,
+  }) async =>
+      _hasil(await _coba(() => http.post(_u('/api/auth/daftar'),
+          headers: _header,
+          body: jsonEncode({
+            'nama': nama,
+            'namaUsaha': namaUsaha,
+            'noWa': noWa,
+            'email': email,
+            'kode': kode,
+            'googleIdToken': googleIdToken,
+            'googleAccessToken': googleAccessToken,
+            'pin': pin,
+          }))));
+
+  /// identitas: email atau nomor WA
+  static Future<Map<String, dynamic>> masukAkun(String identitas, String pin) async => _hasil(await _coba(() =>
+      http.post(_u('/api/auth/masuk'), headers: _header, body: jsonEncode({'identitas': identitas, 'pin': pin}))));
+
+  static Future<Map<String, dynamic>> lupaPin(String identitas, String pinBaru,
+          {String? kode, String? googleIdToken, String? googleAccessToken}) async =>
+      _hasil(await _coba(() => http.post(_u('/api/auth/lupa-pin'),
+          headers: _header,
+          body: jsonEncode({
+            'identitas': identitas,
+            'kode': kode,
+            'googleIdToken': googleIdToken,
+            'googleAccessToken': googleAccessToken,
+            'pinBaru': pinBaru,
+          }))));
+
+  /// Hasil: {terdaftar: true, pedagang} atau {terdaftar: false, email, nama}
+  static Future<Map<String, dynamic>> masukGoogle(String? idToken, String? accessToken) async => _hasil(await _coba(() =>
+      http.post(_u('/api/auth/google'), headers: _header, body: jsonEncode({'idToken': idToken, 'accessToken': accessToken}))));
+
+  // ---------------- ekspor laporan ----------------
+
+  /// format: 'pdf' atau 'xlsx'. Hasil: (isi berkas, nama berkas)
+  static Future<(Uint8List, String)> eksporLaporan(String id, String format, {String? dari, String? sampai}) async {
+    final r = await _coba(() => http
+        .get(_u('/api/pedagang/$id/laporan/ekspor',
+            {'format': format, if (dari != null) 'dari': dari, if (sampai != null) 'sampai': sampai}), headers: _header)
+        .timeout(const Duration(seconds: 60)));
+    if (r.statusCode != 200) _hasil(r);
+    final cd = r.headers['content-disposition'] ?? '';
+    final m = RegExp(r'filename="?([^";]+)"?').firstMatch(cd);
+    return (r.bodyBytes, m?.group(1) ?? 'Laporan_VoKas.$format');
+  }
+
+  static Future<Map<String, dynamic>> kirimLaporanKeEmail(String id, {String? dari, String? sampai}) async =>
+      _hasil(await _coba(() => http
+          .post(_u('/api/pedagang/$id/laporan/kirim-email', {if (dari != null) 'dari': dari, if (sampai != null) 'sampai': sampai}),
+              headers: _header)
+          .timeout(const Duration(seconds: 90))));
+
+  // ---------------- pengajuan QRIS BRI ----------------
+
+  static Future<Map<String, dynamic>?> statusQris(String id) async {
+    try {
+      return _hasil(await _coba(() => http.get(_u('/api/pedagang/$id/qris'), headers: _header)));
+    } on ApiGagal catch (e) {
+      if (e.status == 404) return null;
+      rethrow;
+    }
+  }
+
+  static Future<Map<String, dynamic>> ajukanQris(String id, Map<String, dynamic> data) async =>
+      _hasil(await _coba(() => http.post(_u('/api/pedagang/$id/qris'), headers: _header, body: jsonEncode(data))));
+
+  static Future<void> batalQris(String id) async =>
+      _hasil(await _coba(() => http.delete(_u('/api/pedagang/$id/qris'), headers: _header)));
+
   /// Email laporan: kirim kode OTP ke email, lalu verifikasi.
   static Future<Map<String, dynamic>> daftarEmail(String id, String email) async => _hasil(
       await _coba(() => http.post(_u('/api/pedagang/$id/email'), headers: _header, body: jsonEncode({'email': email}))));
