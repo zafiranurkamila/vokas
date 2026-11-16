@@ -19,6 +19,7 @@ import 'riwayat_suara.dart';
 import 'saran_belanja.dart';
 import '../widget/pembaca_suara.dart';
 import '../widget/struk_digital.dart';
+import '../widget/banner_promo.dart';
 import 'profil.dart';
 import 'rapor_kur.dart';
 
@@ -359,7 +360,37 @@ class _TabBerandaState extends State<TabBeranda> {
             final daftar = trx.reversed.cast<Map<String, dynamic>>().toList();
             return ListView(padding: paddingTab, children: [
               kepala,
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
+              BannerPromo([
+                Promo(
+                  judul: 'Bayar QRIS BRI, langsung tercatat',
+                  isi: 'Tidak perlu mencatat ulang pembayaran dari pembeli.',
+                  tombol: 'Terima QRIS',
+                  foto: 'assets/banner/qris.jpg',
+                  ikon: Icons.qr_code_2_rounded,
+                  warna: Warna.oliveTua,
+                  onTap: () => _buka(const LayarTerimaQris()),
+                ),
+                Promo(
+                  judul: 'Siap ajukan KUR BRI?',
+                  isi: 'Cek skor Rapor Kesiapan KUR dari catatan harianmu.',
+                  tombol: 'Lihat rapor',
+                  foto: 'assets/banner/kur.jpg',
+                  ikon: Icons.verified_rounded,
+                  warna: Warna.olive,
+                  onTap: () => widget.keTab(2),
+                ),
+                Promo(
+                  judul: 'Kasbon cukup diucapkan',
+                  isi: '"Bu Ani ngutang 20 ribu" langsung tercatat, tagih lewat WhatsApp.',
+                  tombol: 'Buka kasbon',
+                  foto: 'assets/banner/kasbon.jpg',
+                  ikon: Icons.menu_book_rounded,
+                  warna: Warna.qris,
+                  onTap: () => _buka(const LayarKasbon()),
+                ),
+              ]),
+              const SizedBox(height: 16),
               _KartuUntung(lap, target: Sesi.targetHarian, onDengar: () => _dengarkan(lap, kur), aksi: [
                 _Aksi(Icons.auto_awesome_rounded, 'Tanya AI', () => _buka(const LayarTanyaAi())),
                 _Aksi(Icons.qr_code_2_rounded, 'Terima QRIS', () => _buka(const LayarTerimaQris())),

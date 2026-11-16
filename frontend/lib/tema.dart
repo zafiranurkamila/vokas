@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Palet sama dengan prototipe: sage/olive yang bersih.
+/// Palet putih-hijau: latar putih bersih, hijau segar sebagai warna utama.
 class Warna {
-  static const olive = Color(0xFF7E9E52);
-  static const oliveTua = Color(0xFF3F5A2A);
-  static const khaki = Color(0xFFDFE5B5);
+  static const olive = Color(0xFF2E9E5B);
+  static const oliveTua = Color(0xFF14724A);
+  static const khaki = Color(0xFFDDF2E4);
   static const matahari = Color(0xFFF2C230);
   static const qris = Color(0xFF2F6FA8);
-  static const latar = Color(0xFFF1F5E8);
+  static const latar = Color(0xFFF5F8F6);
   static const kartu = Color(0xFFFFFFFF);
-  static const tinta = Color(0xFF23301C);
-  static const redup = Color(0xFF7C8873);
-  static const garis = Color(0xFFE2E8D4);
+  static const tinta = Color(0xFF1B2A22);
+  static const redup = Color(0xFF6B7A72);
+  static const garis = Color(0xFFE3EBE6);
   static const merah = Color(0xFFB4533A);
 }
 
@@ -32,6 +32,8 @@ ThemeData temaVokas() {
       backgroundColor: Warna.latar,
       foregroundColor: Warna.tinta,
       elevation: 0,
+      scrolledUnderElevation: 0,
+      surfaceTintColor: Colors.transparent,
       titleTextStyle: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: Warna.tinta),
     ),
     filledButtonTheme: FilledButtonThemeData(
@@ -131,7 +133,12 @@ class Kartu extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
         padding: padding,
-        decoration: BoxDecoration(color: warna, borderRadius: BorderRadius.circular(20)),
+        decoration: BoxDecoration(
+          color: warna,
+          borderRadius: BorderRadius.circular(20),
+          // latar sudah putih, jadi kartu putih diberi garis tipis supaya tetap terpisah
+          border: warna == Warna.kartu ? Border.all(color: Warna.garis) : null,
+        ),
         child: child,
       );
 }

@@ -40,6 +40,7 @@ flutter:
   assets:
     - assets/
     - assets/suara/
+    - assets/banner/
 
 # Ikon aplikasi. Buat ulang dengan: dart run flutter_launcher_icons
 flutter_launcher_icons:
@@ -52,5 +53,5 @@ flutter_launcher_icons:
   web:
     generate: true
     image_path: "assets/ikon/vokas_ikon.png"
-    background_color: "#3F5A2A"
-    theme_color: "#3F5A2A"
+    background_color: "#14724A"
+    theme_color: "#14724A"

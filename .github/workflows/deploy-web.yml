@@ -7,7 +7,8 @@ name: Deploy web ke Firebase
 
 on:
   push:
-    branches: [main]
+    # main -> situs utama; uji/** -> tautan uji coba terpisah (situs utama tidak berubah)
+    branches: [main, "uji/**"]
     paths:
       - "frontend/**"
       - ".github/workflows/deploy-web.yml"
@@ -53,5 +54,6 @@ jobs:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_VOKAS_4E7CC }}
           projectId: vokas-4e7cc
-          channelId: live
+          channelId: ${{ github.ref_name == 'main' && 'live' || 'uji' }}
+          expires: ${{ github.ref_name == 'main' && '' || '7d' }}
           entryPoint: frontend
