@@ -36,6 +36,7 @@ class Sesi {
     await _p.setString('nama', (p['nama'] ?? '') as String);
     await _p.setString('namaUsaha', (p['namaUsaha'] ?? '') as String);
     await _p.setString('noWa', (p['noWa'] ?? '') as String);
+    await _pulihkanBri(p['id'] as String);
   }
 
   // ---------- target omzet harian ----------
@@ -70,8 +71,42 @@ class Sesi {
     await _p.setBool('briTersambung', false);
   }
 
+  static const _kunciBri = ['briTersambung', 'briRekening', 'briNama'];
+
+  /// Status rekening BRI disimpan per akun saat keluar, supaya saat masuk lagi
+  /// pedagang tidak diminta menyambungkan rekening dari awal.
+  static Future<void> _simpanBriAkun(String id) async {
+    for (final k in _kunciBri) {
+      final v = _p.get(k);
+      final kAkun = '${k}_$id';
+      if (v is bool) {
+        await _p.setBool(kAkun, v);
+      } else if (v is String) {
+        await _p.setString(kAkun, v);
+      } else {
+        await _p.remove(kAkun);
+      }
+    }
+  }
+
+  static Future<void> _pulihkanBri(String id) async {
+    if (!_p.containsKey('briTersambung_$id')) return;
+    for (final k in _kunciBri) {
+      final v = _p.get('${k}_$id');
+      if (v is bool) {
+        await _p.setBool(k, v);
+      } else if (v is String) {
+        await _p.setString(k, v);
+      } else {
+        await _p.remove(k);
+      }
+    }
+  }
+
   static Future<void> keluar() async {
-    for (final k in ['pedagangId', 'nama', 'namaUsaha', 'noWa', 'briTersambung', 'briRekening', 'briNama']) {
+    final id = pedagangId;
+    if (id != null && sudahPilihBri) await _simpanBriAkun(id);
+    for (final k in ['pedagangId', 'nama', 'namaUsaha', 'noWa', ..._kunciBri]) {
       await _p.remove(k);
     }
   }
