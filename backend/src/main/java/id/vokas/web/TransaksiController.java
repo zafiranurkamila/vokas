@@ -72,8 +72,30 @@ public class TransaksiController {
         if (audio.isEmpty() || audio.getSize() > MAKS_AUDIO)
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Audio kosong atau lebih dari 12 MB");
         TransaksiService.HasilCatat h = transaksi.catatSuara(id, audio.getBytes(), audio.getContentType());
-        riwayat.simpanCatat(id, "SUARA", null, h);
+        riwayat.simpanCatat(id, "SUARA", null, h, audio.getBytes(), audio.getContentType());
         return h;
+    }
+
+    private static final long MAKS_FOTO = 8L * 1024 * 1024;
+
+    /** Foto nota/struk belanja dibaca AI lalu dicatat. */
+    @PostMapping(value = "/pedagang/{id}/catat-foto", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public TransaksiService.HasilCatat catatFoto(@PathVariable UUID id, @RequestParam("foto") MultipartFile foto) throws IOException {
+        if (foto.isEmpty() || foto.getSize() > MAKS_FOTO)
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Foto kosong atau lebih dari 8 MB");
+        TransaksiService.HasilCatat h = transaksi.catatFoto(id, foto.getBytes(), foto.getContentType());
+        riwayat.simpanCatat(id, "FOTO", null, h);
+        return h;
+    }
+
+    /** Putar ulang rekaman voice note dari riwayat. */
+    @GetMapping("/pedagang/{id}/riwayat-ai/{riwayatId}/audio")
+    public org.springframework.http.ResponseEntity<byte[]> audio(@PathVariable UUID id, @PathVariable UUID riwayatId) {
+        id.vokas.model.RiwayatAudio a = riwayat.audio(id, riwayatId);
+        if (a == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Rekaman tidak tersimpan");
+        return org.springframework.http.ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(a.getMime()))
+                .body(a.getAudio());
     }
 
     /** Riwayat Tanya AI (jenis=TANYA) atau catatan suara/teks (jenis=CATAT), maksimal 50 terakhir. */

@@ -424,36 +424,50 @@ class _KartuUntung extends StatelessWidget {
           ]),
         ),
         Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          child: Row(children: [
-            for (final a in aksi)
-              Expanded(
-                child: InkWell(
-                  onTap: a.onTap,
-                  borderRadius: BorderRadius.circular(14),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: Column(children: [
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(color: Warna.khaki.withOpacity(.7), borderRadius: BorderRadius.circular(14)),
-                        child: Icon(a.ikon, color: Warna.oliveTua, size: 22),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(a.label,
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          style: const TextStyle(fontSize: 11, height: 1.2, fontWeight: FontWeight.w500)),
-                    ]),
-                  ),
-                ),
-              ),
+          padding: const EdgeInsets.fromLTRB(4, 12, 4, 8),
+          child: Column(children: [
+            // 5 tombol per baris; ikon rata atas dan label selalu setinggi 2 baris supaya semua sejajar
+            for (var b = 0; b < aksi.length; b += 5)
+              Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                for (var i = b; i < b + 5; i++)
+                  Expanded(child: i < aksi.length ? _TombolAksi(aksi[i]) : const SizedBox()),
+              ]),
           ]),
         ),
       ]),
     );
   }
+}
+
+class _TombolAksi extends StatelessWidget {
+  const _TombolAksi(this.a);
+  final _Aksi a;
+
+  @override
+  Widget build(BuildContext context) => InkWell(
+        onTap: a.onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(2, 4, 2, 4),
+          child: Column(children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(color: Warna.khaki.withOpacity(.7), borderRadius: BorderRadius.circular(14)),
+              child: Icon(a.ikon, color: Warna.oliveTua, size: 22),
+            ),
+            const SizedBox(height: 6),
+            SizedBox(
+              height: 28,
+              child: Text(a.label,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 10.5, height: 1.25, fontWeight: FontWeight.w500)),
+            ),
+          ]),
+        ),
+      );
 }
 
 class _Angka extends StatelessWidget {

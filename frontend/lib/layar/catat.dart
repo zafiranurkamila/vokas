@@ -44,6 +44,8 @@ class _LembarCatatState extends State<LembarCatat> with SingleTickerProviderStat
   final List<double> _level = List.filled(_jumlahBatang, 0.08, growable: true);
   Map<String, dynamic>? _hasil;
   bool _adaYangTersimpan = false;
+  bool _dariRiwayat = false; // hasil yang dibuka dari riwayat tidak bisa dibatalkan dari sini
+  bool _membatalkan = false;
   List<Map<String, dynamic>> _riwayat = [];
 
   @override
@@ -65,6 +67,7 @@ class _LembarCatatState extends State<LembarCatat> with SingleTickerProviderStat
       final h = jsonDecode(e['jawaban'] as String) as Map<String, dynamic>;
       setState(() {
         _hasil = h;
+        _dariRiwayat = true;
         _status = _Status.selesai;
       });
     } catch (_) {
@@ -130,6 +133,61 @@ class _LembarCatatState extends State<LembarCatat> with SingleTickerProviderStat
     }
   }
 
+  /// Salah ngomong saat merekam: buang rekaman, tidak dikirim dan tidak dicatat.
+  Future<void> _batalRekam() async {
+    _timer?.cancel();
+    await _amp?.cancel();
+    _denyut.stop();
+    try {
+      await _rekam.cancel();
+    } catch (_) {}
+    if (!mounted) return;
+    setState(() {
+      _status = _Status.siap;
+      _detik = 0;
+      _level.fillRange(0, _level.length, 0.08);
+    });
+    _pesan('Rekaman dibuang, tidak ada yang dicatat. Silakan rekam ulang.');
+  }
+
+  /// Sudah tercatat tapi ternyata salah: hapus semua transaksi dari catatan barusan.
+  Future<void> _batalkanCatatan() async {
+    final tersimpan = ((_hasil?['tersimpan'] as List?) ?? []).cast<Map<String, dynamic>>();
+    if (tersimpan.isEmpty) return;
+    final ya = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text('Batalkan catatan ini?'),
+        content: Text('${tersimpan.length} transaksi dari catatan barusan akan dihapus. Setelah itu kamu bisa catat ulang.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Tidak')),
+          FilledButton(
+            onPressed: () => Navigator.pop(c, true),
+            style: FilledButton.styleFrom(backgroundColor: Warna.merah, minimumSize: const Size(90, 40)),
+            child: const Text('Ya, batalkan'),
+          ),
+        ],
+      ),
+    );
+    if (ya != true) return;
+    setState(() => _membatalkan = true);
+    try {
+      for (final t in tersimpan) {
+        await Api.hapusTransaksi(Sesi.pedagangId!, '${t['id']}');
+      }
+      if (!mounted) return;
+      setState(() {
+        _hasil = null;
+        _status = _Status.siap;
+      });
+      _pesan('Catatan dibatalkan. Silakan catat ulang.');
+    } catch (e) {
+      _pesan(pesanGalat(e));
+    } finally {
+      if (mounted) setState(() => _membatalkan = false);
+    }
+  }
+
   Future<void> _kirimTeks([String? isi]) async {
     final t = (isi ?? _teks.text).trim();
     if (t.isEmpty) return;
@@ -149,6 +207,7 @@ class _LembarCatatState extends State<LembarCatat> with SingleTickerProviderStat
     if (tersimpan.isNotEmpty) _adaYangTersimpan = true;
     setState(() {
       _hasil = h;
+      _dariRiwayat = false;
       _status = _Status.selesai;
     });
     _muatRiwayat();
@@ -196,7 +255,22 @@ class _LembarCatatState extends State<LembarCatat> with SingleTickerProviderStat
             const SizedBox(height: 18),
             _panelSuara(),
             const SizedBox(height: 18),
-            if (_hasil != null) _Struk(_hasil!),
+            if (_hasil != null) StrukCatat(_hasil!),
+            if (_hasil != null && !_dariRiwayat && !sibuk && ((_hasil!['tersimpan'] as List?) ?? []).isNotEmpty) ...[
+              OutlinedButton.icon(
+                onPressed: _membatalkan ? null : _batalkanCatatan,
+                icon: _membatalkan
+                    ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Icon(Icons.undo_rounded, size: 18),
+                label: const Text('Salah catat? Batalkan'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Warna.merah,
+                  side: BorderSide(color: Warna.merah.withOpacity(.5)),
+                  minimumSize: const Size.fromHeight(44),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
             if (!sibuk) ...[
               if (_hasil == null) ...[
                 const Text('Coba contoh ini:', style: TextStyle(fontSize: 12.5, color: Warna.redup)),
@@ -321,14 +395,22 @@ class _LembarCatatState extends State<LembarCatat> with SingleTickerProviderStat
             ]),
           ),
         ),
+        if (rekam) ...[
+          const SizedBox(height: 8),
+          TextButton.icon(
+            onPressed: _batalRekam,
+            icon: const Icon(Icons.delete_outline_rounded, size: 18, color: Colors.white),
+            label: const Text('Salah ngomong? Buang rekaman', style: TextStyle(color: Colors.white)),
+          ),
+        ],
       ]),
     );
   }
 }
 
 /// Hasil pencatatan dalam bentuk struk kecil dengan animasi centang.
-class _Struk extends StatelessWidget {
-  const _Struk(this.h);
+class StrukCatat extends StatelessWidget {
+  const StrukCatat(this.h, {super.key});
   final Map<String, dynamic> h;
 
   @override

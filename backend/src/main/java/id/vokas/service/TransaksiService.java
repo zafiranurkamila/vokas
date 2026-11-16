@@ -24,10 +24,13 @@ public class TransaksiService {
     private final TransaksiRepo repo;
     private final PedagangRepo pedagangRepo;
     private final PembacaCatatan pembaca;
+    private final id.vokas.parser.PembacaGemini gemini;
     private final ZoneId zona;
 
-    public TransaksiService(TransaksiRepo repo, PedagangRepo pedagangRepo, PembacaCatatan pembaca, VokasProperties props) {
+    public TransaksiService(TransaksiRepo repo, PedagangRepo pedagangRepo, PembacaCatatan pembaca,
+                            id.vokas.parser.PembacaGemini gemini, VokasProperties props) {
         this.repo = repo;
+        this.gemini = gemini;
         this.pedagangRepo = pedagangRepo;
         this.pembaca = pembaca;
         this.zona = ZoneId.of(props.zonaWaktu());
@@ -55,6 +58,14 @@ public class TransaksiService {
         pedagang(pedagangId);
         HasilBaca h = pembaca.bacaSuara(audio, mime);
         return new HasilCatat(h, simpanSemua(pedagangId, h, Sumber.SUARA, h.transkrip()));
+    }
+
+    /** Foto nota belanja dibaca AI lalu dicatat (umumnya sebagai pengeluaran). */
+    @Transactional
+    public HasilCatat catatFoto(UUID pedagangId, byte[] gambar, String mime) {
+        pedagang(pedagangId);
+        HasilBaca h = gemini.bacaGambar(gambar, mime);
+        return new HasilCatat(h, simpanSemua(pedagangId, h, Sumber.FOTO, h.transkrip()));
     }
 
     private List<Transaksi> simpanSemua(UUID pedagangId, HasilBaca h, Sumber sumber, String asli) {

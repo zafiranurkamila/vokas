@@ -83,6 +83,58 @@ public class PembacaGemini implements PembacaCatatan {
                 Map.of("text", "Ini voice note catatan pedagang. Dengarkan lalu uraikan.")));
     }
 
+    /** Foto nota/struk belanja: Gemini membaca gambar lalu mengurai barang dan harganya. */
+    public HasilBaca bacaGambar(byte[] gambar, String mimeType) {
+        String mime = mimeType == null || mimeType.isBlank() ? "image/jpeg" : mimeType.split(";")[0].trim();
+        return panggil(List.of(
+                Map.of("inlineData", Map.of("mimeType", mime, "data", Base64.getEncoder().encodeToString(gambar))),
+                Map.of("text", """
+                        Ini foto nota atau struk belanja milik pedagang kecil. Baca setiap barang beserta total harganya.
+                        Semua baris berjenis KELUAR (belanja modal/bahan), kecuali nota jelas menunjukkan penjualan pedagang.
+                        Abaikan baris subtotal, pajak, diskon, kembalian, dan total akhir (jangan dihitung dua kali).
+                        Bila tulisan tangan atau buram, tebak sewajarnya dari angka yang terbaca. transkrip berisi ringkasan
+                        isi nota dalam satu kalimat, contoh: "Nota Toko Makmur: tepung 2 kg, minyak 1 liter".""")));
+    }
+
+    /**
+     * Jawaban JSON bebas sesuai skema (dipakai fitur kasbon). parts boleh berisi teks atau audio.
+     * Hasil null bila AI tidak aktif atau gagal.
+     */
+    public JsonNode jsonBebas(String instruksi, List<Map<String, Object>> parts, Map<String, Object> skemaJson) {
+        if (!aktif()) return null;
+        long mulai = System.currentTimeMillis();
+        for (String model : urutanModel().stream().distinct().toList()) {
+            if (System.currentTimeMillis() - mulai > 45_000) break;
+            Map<String, Object> gen = new LinkedHashMap<>();
+            gen.put("temperature", 0);
+            gen.put("responseMimeType", "application/json");
+            gen.put("responseSchema", skemaJson);
+            if (model.startsWith("gemini-2.5")) gen.put("thinkingConfig", Map.of("thinkingBudget", 0));
+            Map<String, Object> body = Map.of(
+                    "systemInstruction", Map.of("parts", List.of(Map.of("text", instruksi))),
+                    "contents", List.of(Map.of("role", "user", "parts", parts)),
+                    "generationConfig", gen);
+            try {
+                JsonNode res = http.post().uri(java.net.URI.create(BASE + model + ":generateContent"))
+                        .header("x-goog-api-key", cfg.apiKey())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body(body).retrieve().body(JsonNode.class);
+                String teks = res == null ? "" : res.at("/candidates/0/content/parts/0/text").asText("");
+                if (!teks.isBlank()) {
+                    terakhirBerhasil = model;
+                    return json.readTree(teks);
+                }
+            } catch (HttpClientErrorException e) {
+                int s = e.getStatusCode().value();
+                if (s == 401 || s == 403 || s == 429) return null;
+                if (s == 404) pensiun.add(model);
+            } catch (Exception e) {
+                log.warn("JSON AI ({}) gagal: {}", model, e.toString());
+            }
+        }
+        return null;
+    }
+
     public record Jawaban(String teks, String galat) {}
 
     /**

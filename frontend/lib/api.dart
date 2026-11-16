@@ -194,6 +194,66 @@ class Api {
               headers: _header)
           .timeout(const Duration(seconds: 90))));
 
+  // ---------------- fitur usaha: foto nota, riwayat suara, kasbon, celengan, wawasan ----------------
+
+  static Future<http.Response> _unggah(String path, String field, Uint8List isi, String mime, String nama) async {
+    final jenis = mime.split('/');
+    final req = http.MultipartRequest('POST', _u(path));
+    if (_kunci.isNotEmpty) req.headers['X-Api-Key'] = _kunci;
+    req.files.add(http.MultipartFile.fromBytes(field, isi, filename: nama, contentType: MediaType(jenis.first, jenis.last)));
+    return http.Response.fromStream(await req.send());
+  }
+
+  /// Foto nota belanja dibaca AI lalu dicatat. Hasil sama dengan catatSuara: {baca, tersimpan}
+  static Future<Map<String, dynamic>> catatFoto(String id, Uint8List foto, String mime) async => _hasil(await _coba(
+      () => _unggah('/api/pedagang/$id/catat-foto', 'foto', foto, mime, 'nota.${mime.split('/').last}')
+          .timeout(const Duration(seconds: 120))));
+
+  /// Rekaman voice note dari riwayat (untuk diputar ulang).
+  static Future<Uint8List> audioRiwayat(String id, String riwayatId) async {
+    final r = await _coba(() => http.get(_u('/api/pedagang/$id/riwayat-ai/$riwayatId/audio'), headers: _header));
+    if (r.statusCode != 200) _hasil(r);
+    return r.bodyBytes;
+  }
+
+  static Future<Map<String, dynamic>> kasbon(String id) async =>
+      _hasil(await _coba(() => http.get(_u('/api/pedagang/$id/kasbon'), headers: _header)));
+
+  static Future<Map<String, dynamic>> tambahKasbon(String id, Map<String, dynamic> data) async =>
+      _hasil(await _coba(() => http.post(_u('/api/pedagang/$id/kasbon'), headers: _header, body: jsonEncode(data))));
+
+  /// Kalimat "Bu Ani ngutang 20 ribu" -> draf {namaPelanggan, nominal, keterangan, transkrip, galat}
+  static Future<Map<String, dynamic>> bacaKasbon(String id, String teks) async => _hasil(await _coba(() => http
+      .post(_u('/api/pedagang/$id/kasbon/baca'), headers: _header, body: jsonEncode({'teks': teks}))
+      .timeout(const Duration(seconds: 60))));
+
+  static Future<Map<String, dynamic>> bacaKasbonSuara(String id, Uint8List audio, String mime) async =>
+      _hasil(await _coba(() => _unggah('/api/pedagang/$id/kasbon/baca-suara', 'audio', audio, mime, 'kasbon.wav')
+          .timeout(const Duration(seconds: 90))));
+
+  static Future<void> lunasKasbon(String id, String kasbonId) async =>
+      _hasil(await _coba(() => http.post(_u('/api/pedagang/$id/kasbon/$kasbonId/lunas'), headers: _header)));
+
+  static Future<void> hapusKasbon(String id, String kasbonId) async =>
+      _hasil(await _coba(() => http.delete(_u('/api/pedagang/$id/kasbon/$kasbonId'), headers: _header)));
+
+  static Future<Map<String, dynamic>> celengan(String id) async =>
+      _hasil(await _coba(() => http.get(_u('/api/pedagang/$id/celengan'), headers: _header)));
+
+  static Future<Map<String, dynamic>> aturCelengan(String id, String nama, int target, int persen) async =>
+      _hasil(await _coba(() => http.put(_u('/api/pedagang/$id/celengan'),
+          headers: _header, body: jsonEncode({'nama': nama, 'target': target, 'persen': persen}))));
+
+  static Future<Map<String, dynamic>> setorCelengan(String id, int nominal, {String? catatan}) async =>
+      _hasil(await _coba(() => http.post(_u('/api/pedagang/$id/celengan/setor'),
+          headers: _header, body: jsonEncode({'nominal': nominal, 'catatan': catatan}))));
+
+  static Future<Map<String, dynamic>> saranBelanja(String id) async => _hasil(await _coba(
+      () => http.get(_u('/api/pedagang/$id/saran-belanja'), headers: _header).timeout(const Duration(seconds: 90))));
+
+  static Future<List<dynamic>> peringatan(String id) async =>
+      _hasil(await _coba(() => http.get(_u('/api/pedagang/$id/peringatan'), headers: _header)));
+
   // ---------------- pengajuan QRIS BRI ----------------
 
   static Future<Map<String, dynamic>?> statusQris(String id) async {

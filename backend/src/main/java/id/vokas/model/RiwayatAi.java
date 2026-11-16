@@ -23,6 +23,10 @@ public class RiwayatAi {
     private String jawaban;
     private String galat;
 
+    /** true bila rekaman suaranya tersimpan di tabel riwayat_audio (bisa diputar ulang). */
+    @Column(nullable = false)
+    private boolean adaAudio;
+
     @Column(nullable = false, updatable = false, insertable = false)
     private OffsetDateTime dibuat;
 
@@ -45,4 +49,6 @@ public class RiwayatAi {
     public String getJawaban() { return jawaban; }
     public String getGalat() { return galat; }
     public OffsetDateTime getDibuat() { return dibuat; }
+    public boolean isAdaAudio() { return adaAudio; }
+    public void setAdaAudio(boolean v) { adaAudio = v; }
 }

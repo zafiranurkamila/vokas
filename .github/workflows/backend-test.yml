@@ -1,0 +1,33 @@
+name: Tes backend
+
+# Semua tes backend (unit + integrasi dengan PostgreSQL embedded) dijalankan di server GitHub,
+# bukan di laptop, setiap ada perubahan backend.
+on:
+  push:
+    branches: [main]
+    paths: ['backend/**', '.github/workflows/backend-test.yml']
+  pull_request:
+    paths: ['backend/**']
+  workflow_dispatch:
+
+jobs:
+  tes:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Jalankan tes
+        run: mvn -B test
+      - name: Simpan laporan tes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: laporan-tes-backend
+          path: backend/target/surefire-reports/
