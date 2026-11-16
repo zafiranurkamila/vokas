@@ -42,9 +42,12 @@ public class LaporanBerkalaService {
     private final EmailService email;
     private final WhatsAppClient wa;
     private final TwilioClient twilio;
+    private final EksporLaporanService ekspor;
 
     public LaporanBerkalaService(PedagangRepo pedagangRepo, TransaksiService transaksi, LaporanService laporan,
-                                 SkorKurService kur, EmailService email, WhatsAppClient wa, TwilioClient twilio) {
+                                 SkorKurService kur, EmailService email, WhatsAppClient wa, TwilioClient twilio,
+                                 EksporLaporanService ekspor) {
+        this.ekspor = ekspor;
         this.pedagangRepo = pedagangRepo;
         this.transaksi = transaksi;
         this.laporan = laporan;
@@ -147,7 +150,12 @@ public class LaporanBerkalaService {
                 + "<p style='color:#6B7663;font-size:12px'>Rapor Kesiapan KUR adalah alat bantu, bukan keputusan kredit. Persetujuan KUR tetap dari BRI.</p>"
                 + kaki();
         boolean e = p.isEmailTerverifikasi() && p.getEmail() != null
-                && email.kirim(p.getEmail(), "Laporan " + namaBulan + " - VoKas", isi);
+                && email.kirim(p.getEmail(), "Laporan " + namaBulan + " - VoKas", isi, List.of(
+                new EmailService.Lampiran(EksporLaporanService.namaBerkas(p, bulan.atDay(1), bulan.atEndOfMonth(), "pdf"),
+                        ekspor.pdf(id, bulan.atDay(1), bulan.atEndOfMonth()), "application/pdf"),
+                new EmailService.Lampiran(EksporLaporanService.namaBerkas(p, bulan.atDay(1), bulan.atEndOfMonth(), "xlsx"),
+                        ekspor.xlsx(id, bulan.atDay(1), bulan.atEndOfMonth()),
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")));
         boolean w = kirimWa(p, "VoKas - Laporan " + namaBulan + "\nOmzet " + rp(l.omzet()) + "\nLaba " + rp(l.laba())
                 + "\nSkor KUR " + r.skor() + "/100\nLaporan lengkap ada di email.");
         return new Hasil(e, w);

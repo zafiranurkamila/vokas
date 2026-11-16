@@ -44,7 +44,9 @@ services:
         value: whatsapp:+14155238886
       - key: TWILIO_WEBHOOK_URL
         sync: false
-      # email laporan (SMTP gratis, misalnya Brevo: smtp-relay.brevo.com:587)
+      # email laporan: Brevo HTTP API (Render gratis memblokir port SMTP)
+      - key: BREVO_API_KEY
+        sync: false
       - key: SMTP_HOST
         sync: false
       - key: SMTP_PORT
@@ -54,4 +56,7 @@ services:
       - key: SMTP_PASS
         sync: false
       - key: MAIL_FROM
+        sync: false
+      # login Google: Web client ID dari Google Cloud Console
+      - key: GOOGLE_CLIENT_ID
         sync: false
