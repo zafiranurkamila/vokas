@@ -15,7 +15,7 @@ class PembacaSuara {
     try {
       await _tts.setLanguage('id-ID');
     } catch (_) {}
-    await _tts.setSpeechRate(kIsWeb ? 0.95 : 0.48);
+    await _tts.setSpeechRate(kIsWeb ? 1.15 : 0.58);
     await _tts.setPitch(1.0);
     _tts.setStartHandler(() => berbicara.value = true);
     _tts.setCompletionHandler(() => berbicara.value = false);
@@ -28,13 +28,20 @@ class PembacaSuara {
     await _siapkan();
     await _tts.stop();
     berbicara.value = true;
-    await _tts.speak(teks);
+    await _tts.speak(ucapan(teks));
   }
 
   static Future<void> berhenti() async {
     await _tts.stop();
     berbicara.value = false;
   }
+
+  /// Singkatan dibaca seperti orang mengucapkannya, bukan dieja per huruf.
+  static String ucapan(String teks) => teks
+      .replaceAll(RegExp(r'\bQRIS\b'), 'kiris')
+      .replaceAll(RegExp(r'\bKUR\b'), 'kur')
+      .replaceAll(RegExp(r'\bVoKas\b'), 'vokas')
+      .replaceAll(RegExp(r'\bAI\b'), 'e ai');
 
   /// "Rp125.000" dibaca "125 ribu rupiah" supaya terdengar wajar.
   static String uang(num n) {
