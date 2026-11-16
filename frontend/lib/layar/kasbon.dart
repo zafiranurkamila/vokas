@@ -166,7 +166,7 @@ class _LayarKasbonState extends State<LayarKasbon> {
     final usaha = Sesi.namaUsaha.isNotEmpty ? Sesi.namaUsaha : 'warung kami';
     final ket = k['keterangan'] == null ? '' : ' untuk ${k['keterangan']}';
     final pesan = 'Halo ${k['namaPelanggan']}, mengingatkan kasbon di $usaha sebesar ${rp(k['nominal'] as num)}$ket '
-        '(sejak ${_tanggal(k['dibuat'])}). Kalau sudah ada rezekinya boleh dibayar ya. Terima kasih 🙏';
+        '(sejak ${_tanggal(k['dibuat'])}). Kalau sudah ada rezekinya boleh dibayar ya. Terima kasih';
     await Share.share(pesan, subject: 'Tagihan kasbon');
   }
 
@@ -261,7 +261,7 @@ class _LayarKasbonState extends State<LayarKasbon> {
                   if (belum.isEmpty)
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: 16),
-                      child: Text('Tidak ada kasbon. Semua pelanggan sudah lunas 👍',
+                      child: Text('Tidak ada kasbon. Semua pelanggan sudah lunas',
                           textAlign: TextAlign.center, style: TextStyle(color: Warna.redup)),
                     ),
                   for (final k in belum) ...[

@@ -73,7 +73,7 @@ class _LayarCelenganState extends State<LayarCelengan> {
 
   Future<void> _setor(int nominal, {String? catatan}) =>
       _jalankan(() => Api.setorCelengan(Sesi.pedagangId!, nominal, catatan: catatan), pesan: nominal > 0
-          ? '${rp(nominal)} masuk celengan 🎉'
+          ? '${rp(nominal)} masuk celengan'
           : '${rp(-nominal)} diambil dari celengan');
 
   Future<void> _jalankan(Future<Map<String, dynamic>> Function() f, {String? pesan}) async {
@@ -173,7 +173,7 @@ class _LayarCelenganState extends State<LayarCelengan> {
                     Text('$persen% tercapai', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
                     const Spacer(),
                     if (persen >= 100)
-                      const Text('Target tercapai! 🎉', style: TextStyle(color: Warna.matahari, fontWeight: FontWeight.w600))
+                      const Text('Target tercapai!', style: TextStyle(color: Warna.matahari, fontWeight: FontWeight.w600))
                     else if (perkiraan != null)
                       Text('±$perkiraan hari lagi', style: const TextStyle(color: Warna.khaki, fontSize: 12.5)),
                   ]),
@@ -182,7 +182,7 @@ class _LayarCelenganState extends State<LayarCelengan> {
               const SizedBox(height: 14),
               Kartu(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                  Text(sudah ? 'Hari ini sudah menyisihkan 👍' : 'Sisihkan hari ini',
+                  Text(sudah ? 'Hari ini sudah menyisihkan' : 'Sisihkan hari ini',
                       style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 15)),
                   const SizedBox(height: 4),
                   Text(

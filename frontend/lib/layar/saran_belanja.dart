@@ -152,7 +152,7 @@ class _LayarSaranBelanjaState extends State<LayarSaranBelanja> {
                 Text('Peringatan pintar', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 8),
                 if (peringatan.isEmpty)
-                  const Text('Tidak ada yang perlu dikhawatirkan. Usaha aman 👍', style: TextStyle(color: Warna.redup)),
+                  const Text('Tidak ada yang perlu dikhawatirkan. Usaha aman', style: TextStyle(color: Warna.redup)),
                 for (final p in peringatan.cast<Map<String, dynamic>>()) ...[
                   KartuPeringatan(p),
                   const SizedBox(height: 8),
