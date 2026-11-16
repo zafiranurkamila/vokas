@@ -6,7 +6,7 @@ yang ikut tercatat, plus Rapor Kesiapan KUR.
 - Java 17, Spring Boot 3.3, Maven
 - Database: Supabase (PostgreSQL), skema dibuat otomatis oleh Flyway (`src/main/resources/db/migration`)
 - AI: Gemini API free tier, hanya dipanggil untuk voice note dan kalimat yang tidak terbaca oleh parser aturan
-- Deploy: Railway (Dockerfile). Frontend terpisah di Firebase Hosting.
+- Deploy: Render (Dockerfile, lihat render.yaml). Frontend terpisah di Firebase Hosting.
 
 ## Alur membaca catatan
 
