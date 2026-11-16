@@ -79,7 +79,8 @@ public class SkorKurService {
                 kriteria("Tren omzet", n < 14 ? 0.5 : batas(0.5 + tumbuh * 2.5), 15, n < 14
                         ? "Butuh minimal 14 hari tercatat"
                         : (tumbuh >= 0 ? "Naik " : "Turun ") + Math.abs(Math.round(tumbuh * 100)) + "% dari awal pencatatan"));
-        int skor = (int) Math.round(k.stream().mapToDouble(x -> x.nilai() * x.bobot()).sum());
+        // skor = jumlah poin yang ditampilkan, supaya total selalu sama dengan penjumlahan komponennya
+        int skor = k.stream().mapToInt(Kriteria::poin).sum();
         boolean siap = skor >= AMBANG_SIAP;
         return new Rapor(skor, siap, siap ? "Siap dibawa untuk ajukan KUR" : "Lanjutkan pencatatan", n, hariTotal, k);
     }
