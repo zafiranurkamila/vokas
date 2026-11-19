@@ -73,7 +73,7 @@ class _BannerPromoState extends State<BannerPromo> {
               width: i == _aktif ? 18 : 6,
               height: 6,
               decoration: BoxDecoration(
-                color: i == _aktif ? widget.daftar[i].warna : Warna.garis,
+                color: i == _aktif ? Warna.oliveTua : Warna.garis,
                 borderRadius: BorderRadius.circular(3),
               ),
             ),

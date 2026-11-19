@@ -22,7 +22,6 @@ import '../widget/struk_digital.dart';
 import '../widget/banner_promo.dart';
 import 'profil.dart';
 import 'rapor_kur.dart';
-import 'sambung_bri.dart';
 
 String tglIso(DateTime d) =>
     '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
@@ -369,19 +368,9 @@ class _TabBerandaState extends State<TabBeranda> {
                   tombol: 'Terima QRIS',
                   foto: 'assets/banner/qris.jpg',
                   ikon: Icons.qr_code_2_rounded,
-                  warna: Warna.bri,
+                  warna: Warna.oliveTua,
                   onTap: () => _buka(const LayarTerimaQris()),
                 ),
-                if (Sesi.briTersambung != true)
-                  Promo(
-                    judul: 'Sambungkan rekening usaha BRI',
-                    isi: 'Mutasi rekening masuk ke laporan tanpa dicatat ulang.',
-                    tombol: 'Sambungkan',
-                    foto: 'assets/banner/rekening.jpg',
-                    ikon: Icons.account_balance_rounded,
-                    warna: Warna.bri,
-                    onTap: () => _buka(const LayarSambungBri(dariProfil: true)),
-                  ),
                 Promo(
                   judul: 'Belum punya QRIS BRI?',
                   isi: 'Ajukan pendaftaran QRIS BRI langsung dari VoKas.',
@@ -392,12 +381,12 @@ class _TabBerandaState extends State<TabBeranda> {
                   onTap: () => _buka(const LayarDaftarQris()),
                 ),
                 Promo(
-                  judul: 'Siapkan catatan untuk KUR BRI',
-                  isi: 'Cek skor kelengkapan catatan di Rapor Kesiapan KUR.',
+                  judul: 'Siap ajukan KUR BRI?',
+                  isi: 'Cek skor Rapor Kesiapan KUR dari catatan harianmu.',
                   tombol: 'Lihat rapor',
                   foto: 'assets/banner/kur.jpg',
                   ikon: Icons.verified_rounded,
-                  warna: Warna.bri,
+                  warna: Warna.olive,
                   onTap: () => widget.keTab(2),
                 ),
                 Promo(
