@@ -9,6 +9,7 @@ import '../masuk_google.dart';
 import '../sesi.dart';
 import '../tema.dart';
 import '../widget/papan_pin.dart';
+import '../widget/terhubung_bri.dart';
 
 /// 0812-3456-789 / +62812... / 62812... -> 62812...
 String? normalisasiWa(String s) {
@@ -427,7 +428,9 @@ class _LayarMasukState extends State<LayarMasuk> {
               _daftar ? 'Kode verifikasi dikirim ke email kamu.' : 'Masuk dengan email atau nomor WhatsApp, lalu PIN.',
               textAlign: TextAlign.center,
               style: const TextStyle(color: Warna.redup, fontSize: 13.5)),
-          const SizedBox(height: 20),
+          const SizedBox(height: 12),
+          const Center(child: TerhubungBri()),
+          const SizedBox(height: 18),
           SegmentedButton<bool>(
             segments: const [
               ButtonSegment(value: true, label: Text('Daftar')),

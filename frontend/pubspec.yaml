@@ -41,6 +41,7 @@ flutter:
     - assets/
     - assets/suara/
     - assets/banner/
+    - assets/logo/
 
 # Ikon aplikasi. Buat ulang dengan: dart run flutter_launcher_icons
 flutter_launcher_icons:

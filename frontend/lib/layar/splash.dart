@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../main.dart';
 import '../tema.dart';
+import '../widget/terhubung_bri.dart';
 import 'profil.dart' show PoweredBy;
 
 /// Splash: logo jatuh lalu memantul, bunyi "pop + denting" saat mendarat, lalu nama dan tagline muncul.
@@ -99,7 +100,10 @@ class _LayarSplashState extends State<LayarSplash> with SingleTickerProviderStat
             left: 0,
             right: 0,
             bottom: 36,
-            child: FadeTransition(opacity: _tagline, child: const PoweredBy(terang: true)),
+            child: FadeTransition(
+              opacity: _tagline,
+              child: const Column(children: [TerhubungBri(terang: true), SizedBox(height: 14), PoweredBy(terang: true)]),
+            ),
           ),
         ]),
       );
