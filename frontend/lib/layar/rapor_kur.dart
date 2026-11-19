@@ -24,6 +24,21 @@ class _TabRaporKurState extends State<TabRaporKur> {
   bool _membagikan = false;
 
   Future<void> _bagikan(Map<String, dynamic> r) async {
+    // data hanya dikirim atas persetujuan pedagang
+    final setuju = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text('Bagikan rapor?'),
+        content: const Text('Rapor hanya dikirim dengan persetujuan Anda. Isinya: skor, omzet, laba, porsi QRIS 30 hari, '
+            'dan nomor WhatsApp yang disamarkan.\n\nRapor ini skor kelengkapan catatan, bukan keputusan kredit. '
+            'Penilaian dan keputusan pembiayaan tetap oleh BRI.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Batal')),
+          FilledButton(onPressed: () => Navigator.pop(c, true), child: const Text('Setuju, bagikan')),
+        ],
+      ),
+    );
+    if (setuju != true || !mounted) return;
     setState(() => _membagikan = true);
     try {
       final s = DateTime.now();
@@ -134,6 +149,9 @@ class _TabRaporKurState extends State<TabRaporKur> {
                     const SizedBox(height: 8),
                     Text('${r['hariTercatat']} dari ${r['hariTotal']} hari tercatat',
                         style: const TextStyle(fontSize: 12, color: Warna.oliveTua)),
+                    const SizedBox(height: 4),
+                    const Text('Skor kelengkapan catatan, bukan keputusan kredit.',
+                        style: TextStyle(fontSize: 11, color: Warna.redup, height: 1.35)),
                   ]),
                 ),
               ]),
@@ -153,7 +171,7 @@ class _TabRaporKurState extends State<TabRaporKur> {
               label: const Text('Bagikan rapor ke petugas BRI'),
             ),
             const SizedBox(height: 6),
-            const Text('Ringkasan omzet, laba, dan skor bisa dikirim lewat WhatsApp atau email, atau dibawa saat ke BRI.',
+            const Text('Rapor hanya dikirim dengan persetujuan Anda, lewat WhatsApp atau email, atau dibawa saat ke BRI.',
                 textAlign: TextAlign.center, style: TextStyle(fontSize: 12, color: Warna.redup, height: 1.45)),
             const SizedBox(height: 16),
             const _ApaItuKur(),

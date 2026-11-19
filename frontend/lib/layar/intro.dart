@@ -413,7 +413,7 @@ class _IlustrasiKur extends StatelessWidget {
                     margin: const EdgeInsets.only(top: 4),
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(color: Warna.oliveTua, borderRadius: BorderRadius.circular(8)),
-                    child: const Text('Siap dibawa untuk ajukan KUR',
+                    child: const Text('Catatan siap dilaporkan',
                         style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
                   ),
                 ),

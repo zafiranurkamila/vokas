@@ -137,6 +137,14 @@ public class TransaksiController {
     public record TransaksiBaru(@NotNull Jenis jenis, @NotBlank String namaItem, Integer jumlah, String satuan,
                                 Long hargaSatuan, @Positive long total, Metode metode, LocalDate tanggal) {}
 
+    @PatchMapping("/pedagang/{id}/transaksi/{trxId}")
+    public Transaksi ubah(@PathVariable UUID id, @PathVariable UUID trxId, @Valid @RequestBody TransaksiUbah b) {
+        return transaksi.ubah(id, trxId, b.namaItem(), b.jumlah(), b.satuan(), b.hargaSatuan(), b.total());
+    }
+
+    public record TransaksiUbah(@Size(max = 120) String namaItem, @Positive Integer jumlah, @Size(max = 20) String satuan,
+                                @Positive Long hargaSatuan, @Positive Long total) {}
+
     @DeleteMapping("/pedagang/{id}/transaksi/{trxId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void hapus(@PathVariable UUID id, @PathVariable UUID trxId) {

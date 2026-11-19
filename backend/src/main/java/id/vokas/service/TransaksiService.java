@@ -165,6 +165,21 @@ public class TransaksiService {
     }
 
     @Transactional
+    /** Koreksi satu transaksi, misalnya hasil baca foto nota yang salah. Hanya kolom yang diisi yang diganti. */
+    public Transaksi ubah(UUID pedagangId, UUID transaksiId, String namaItem, Integer jumlah, String satuan, Long hargaSatuan, Long total) {
+        Transaksi t = repo.findById(transaksiId)
+                .filter(x -> x.getPedagangId().equals(pedagangId))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Transaksi tidak ditemukan"));
+        if (namaItem != null && !namaItem.isBlank()) t.setNamaItem(namaItem.trim());
+        if (jumlah != null) t.setJumlah(jumlah);
+        if (satuan != null) t.setSatuan(satuan.isBlank() ? null : satuan.trim());
+        if (hargaSatuan != null) t.setHargaSatuan(hargaSatuan);
+        if (total != null && total > 0) t.setTotal(total);
+        else if (hargaSatuan != null && t.getJumlah() != null) t.setTotal(hargaSatuan * t.getJumlah());
+        if (t.getTotal() <= 0) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Total harus lebih dari 0");
+        return repo.save(t);
+    }
+
     public void hapus(UUID pedagangId, UUID transaksiId) {
         Transaksi t = repo.findById(transaksiId)
                 .filter(x -> x.getPedagangId().equals(pedagangId))

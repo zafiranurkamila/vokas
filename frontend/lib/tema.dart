@@ -8,6 +8,8 @@ class Warna {
   static const khaki = Color(0xFFDDF2E4);
   static const matahari = Color(0xFFF2C230);
   static const qris = Color(0xFF2F6FA8);
+  /// biru untuk banner dan penanda yang berkaitan dengan produk BRI
+  static const bri = Color(0xFF00529C);
   static const latar = Color(0xFFF5F8F6);
   static const kartu = Color(0xFFFFFFFF);
   static const tinta = Color(0xFF1B2A22);

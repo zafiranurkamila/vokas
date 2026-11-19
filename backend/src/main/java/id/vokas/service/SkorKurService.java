@@ -82,7 +82,7 @@ public class SkorKurService {
         // skor = jumlah poin yang ditampilkan, supaya total selalu sama dengan penjumlahan komponennya
         int skor = k.stream().mapToInt(Kriteria::poin).sum();
         boolean siap = skor >= AMBANG_SIAP;
-        return new Rapor(skor, siap, siap ? "Siap dibawa untuk ajukan KUR" : "Lanjutkan pencatatan", n, hariTotal, k);
+        return new Rapor(skor, siap, siap ? "Catatan siap dilaporkan" : "Lanjutkan pencatatan", n, hariTotal, k);
     }
 
     private static Kriteria kriteria(String nama, double v, int bobot, String ket) {

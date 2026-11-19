@@ -313,6 +313,10 @@ class Api {
           _u('/api/pedagang/$id/transaksi', {if (dari != null) 'dari': dari, if (sampai != null) 'sampai': sampai}),
           headers: _header)));
 
+  /// Koreksi satu transaksi (nama, jumlah, satuan, harga satuan, total).
+  static Future<Map<String, dynamic>> ubahTransaksi(String id, String trxId, Map<String, dynamic> data) async =>
+      _hasil(await _coba(() => http.patch(_u('/api/pedagang/$id/transaksi/$trxId'), headers: _header, body: jsonEncode(data))));
+
   static Future<void> hapusTransaksi(String id, String trxId) async =>
       _hasil(await _coba(() => http.delete(_u('/api/pedagang/$id/transaksi/$trxId'), headers: _header)));
 
