@@ -6,7 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../tema.dart';
 
 class Promo {
-  const Promo({required this.judul, required this.isi, required this.tombol, required this.foto, required this.ikon, required this.warna, required this.onTap});
+  const Promo({required this.judul, required this.isi, required this.tombol, required this.foto, required this.ikon, required this.warna, required this.onTap, this.warna2});
   final String judul;
   final String isi;
   final String tombol;
@@ -15,6 +15,9 @@ class Promo {
   final String foto;
   final IconData ikon;
   final Color warna;
+
+  /// Warna kedua untuk banner gradasi (misalnya biru BRI ke hijau VoKas).
+  final Color? warna2;
   final VoidCallback onTap;
 }
 
@@ -103,19 +106,21 @@ class _Kartu extends StatelessWidget {
               Image.asset(
                 p.foto,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Align(
-                  alignment: Alignment.centerRight,
-                  child: Padding(
-                    padding: const EdgeInsets.only(right: 14),
-                    child: Icon(p.ikon, size: 84, color: Colors.white.withOpacity(.22)),
-                  ),
-                ),
+                errorBuilder: (_, __, ___) => p.warna2 != null
+                    ? DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(colors: [p.warna, p.warna2!])))
+                    : Align(
+                        alignment: Alignment.centerRight,
+                        child: Padding(
+                          padding: const EdgeInsets.only(right: 14),
+                          child: Icon(p.ikon, size: 84, color: Colors.white.withOpacity(.22)),
+                        ),
+                      ),
               ),
               // bayangan hijau dari kiri supaya tulisan terbaca di atas foto
               DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [p.warna.withOpacity(.95), p.warna.withOpacity(.75), p.warna.withOpacity(.05)],
+                    colors: [p.warna.withOpacity(.95), (p.warna2 ?? p.warna).withOpacity(.75), (p.warna2 ?? p.warna).withOpacity(.05)],
                     stops: const [0, .45, 1],
                   ),
                 ),

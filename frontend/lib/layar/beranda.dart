@@ -378,6 +378,7 @@ class _TabBerandaState extends State<TabBeranda> {
                   foto: 'assets/banner/daftar_qris.jpg',
                   ikon: Icons.app_registration_rounded,
                   warna: Warna.bri,
+                  warna2: Warna.oliveTua,
                   onTap: () => _buka(const LayarDaftarQris()),
                 ),
                 Promo(
